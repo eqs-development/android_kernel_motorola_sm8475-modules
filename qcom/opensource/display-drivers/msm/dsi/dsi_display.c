@@ -1073,6 +1073,19 @@ release_panel_lock:
 	return rc;
 }
 
+bool dsi_display_force_esd_disable(void *display)
+{
+	struct dsi_display *dsi_display = display;
+	struct dsi_panel *panel;
+
+	if (dsi_display == NULL)
+		return false;
+
+	panel = dsi_display->panel;
+
+	return (panel->esd_utag_enable? false: true);
+}
+
 static int dsi_display_ctrl_get_host_init_state(struct dsi_display *dsi_display,
 		bool *state)
 {

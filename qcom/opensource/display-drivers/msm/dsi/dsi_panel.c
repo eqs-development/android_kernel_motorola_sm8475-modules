@@ -4027,6 +4027,8 @@ static void dsi_panel_setup_vm_ops(struct dsi_panel *panel, bool trusted_vm_env)
 		panel->panel_ops.parse_power_cfg = dsi_panel_parse_power_cfg;
 		panel->panel_ops.trigger_esd_attack = dsi_panel_trigger_esd_attack;
 	}
+}
+
 static int dsi_panel_parse_param_prop(struct dsi_panel *panel,
 				struct device_node *of_node, u32 panel_idx)
 {

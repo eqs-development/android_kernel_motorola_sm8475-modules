@@ -893,7 +893,7 @@ int dsi_display_cmd_mipi_transfer(struct dsi_display *display,
 	}
 
 	flags |= DSI_CTRL_CMD_FETCH_MEMORY | DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
-	rc = dsi_ctrl_cmd_transfer(m_ctrl->ctrl, msg, &flags);
+	//rc = dsi_ctrl_cmd_transfer(m_ctrl->ctrl, msg);
 	if (((flags & DSI_CTRL_CMD_READ) && rc <= 0) ||
 		(!(flags & DSI_CTRL_CMD_READ) && rc))
 		DSI_ERR("failed to transfer cmd. rc = %d\n", rc);
@@ -1548,7 +1548,7 @@ static int dsi_display_read_elvss_status(struct dsi_display_ctrl *ctrl,
 	}
 	cmds.msg.rx_buf = &elvss_val;
 	cmds.msg.rx_len = 1;
-	rc = dsi_ctrl_cmd_transfer(ctrl->ctrl, &cmds.msg, &flags);
+	//rc = dsi_ctrl_cmd_transfer(ctrl->ctrl, &cmds.msg);
 	if (rc <= 0) {
 		DSI_ERR("rx cmd transfer failed rc=%d\n", rc);
 		goto error;

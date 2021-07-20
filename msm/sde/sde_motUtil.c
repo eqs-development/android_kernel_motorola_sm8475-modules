@@ -349,9 +349,10 @@ static ssize_t _sde_debugfs_motUtil_dispUtil_read(char *buffer)
 
 	if (motUtil_data.read_len) {
 		blen = snprintf(buffer, 16, "motUtil_read: ");
-		for (i = 0; i < motUtil_data.read_len; i ++)
+		for (i = 0; i < motUtil_data.read_len; i ++){
 			blen += snprintf((buffer + blen) , 6, "0x%02x ",
 					*motUtil_data.rd_buf++);
+		}
 
 			blen += snprintf((buffer + blen), 2, "\n");
 	} else

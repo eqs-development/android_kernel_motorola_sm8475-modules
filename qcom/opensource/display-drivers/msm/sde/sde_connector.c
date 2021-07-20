@@ -1737,8 +1737,6 @@ static int sde_connector_atomic_set_property(struct drm_connector *connector,
 	struct sde_connector *c_conn;
 	struct sde_connector_state *c_state;
 	int idx, rc;
-	uint64_t fence_user_fd;
-	uint64_t __user prev_user_fd;
 	struct msm_param_info param_info;
 
 	if (!connector || !state || !property) {

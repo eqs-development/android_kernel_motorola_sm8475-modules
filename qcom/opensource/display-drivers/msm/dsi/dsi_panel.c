@@ -4345,7 +4345,7 @@ static int dsi_panel_get_pwr_mode(struct dsi_panel *panel, u8 *val)
 	cmd.msg.rx_len = 1;
 	cmd.msg.rx_buf = &rx_buf;
 
-	rc = dsi_display_cmd_mipi_transfer(display, &cmd.msg, flags);
+	//rc = dsi_display_cmd_mipi_transfer(display, cmd, flags);
 	if (rc <= 0) {
 		DSI_ERR("Failed to call dsi_display_cmd_transfer. rc=%d\n", rc);
 		rc = -EIO;

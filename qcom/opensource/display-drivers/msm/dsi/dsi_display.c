@@ -9405,6 +9405,7 @@ int dsi_display_enable(struct dsi_display *display)
 		return 0;
 	}
 
+	DSI_INFO("[drm] dsi_display_enable display->display_lock\n");
 	mutex_lock(&display->display_lock);
 
 	mode = display->panel->cur_mode;

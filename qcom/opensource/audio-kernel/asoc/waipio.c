@@ -2034,7 +2034,7 @@ static int msm_rx_tx_codec_init(struct snd_soc_pcm_runtime *rtd)
 
 	if (pdata->wcd_disabled) {
 		lpass_cdc_set_port_map(lpass_cdc_component,
-			ARRAY_SIZE(sm_port_map_tx_plus_wsa), sm_port_map_tx_plus_wsa);
+			ARRAY_SIZE(sm_port_map), sm_port_map);
 		goto done;
 	}
 

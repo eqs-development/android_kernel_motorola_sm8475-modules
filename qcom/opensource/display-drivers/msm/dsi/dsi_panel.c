@@ -35,7 +35,7 @@
 #include "dsi_mot_backlight.h"
 
 #if defined(CONFIG_DRM_DYNAMIC_REFRESH_RATE)
-static struct blocking_notifier_head dsi_freq_head =
+struct blocking_notifier_head dsi_freq_head =
 			BLOCKING_NOTIFIER_INIT(dsi_freq_head);
 EXPORT_SYMBOL_GPL(dsi_freq_head);
 #endif

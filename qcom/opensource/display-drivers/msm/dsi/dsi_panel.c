@@ -32,6 +32,7 @@
 #include "sde_vdc_helper.h"
 #include "dsi_display.h"
 #include "dsi_display_mot_ext.h"
+#include "dsi_mot_backlight.h"
 
 #if defined(CONFIG_DRM_DYNAMIC_REFRESH_RATE)
 struct blocking_notifier_head dsi_freq_head =
@@ -733,7 +734,8 @@ static int dsi_panel_update_backlight(struct dsi_panel *panel,
 		mode_flags = dsi->mode_flags;
 		dsi->mode_flags |= MIPI_DSI_MODE_LPM;
 	}
-
+	if(panel->backlight_map_type > 0)
+		bl_lvl = mot_backlight_level[bl_lvl][panel->backlight_map_type-1];
 	if (panel->bl_config.bl_inverted_dbv)
 		bl_lvl = (((bl_lvl & 0xff) << 8) | (bl_lvl >> 8));
 
@@ -4317,6 +4319,14 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
 	panel->tp_state_check_enable = of_property_read_bool(of_node,
 				"qcom,tp_state_check_enable");
 
+	rc = of_property_read_u32(of_node,
+				"qcom,backlight_map_type",&panel->backlight_map_type);
+       if (rc) {
+           DSI_INFO("panel->backlight_map_type not found\n");
+           panel->backlight_map_type = 0;
+       } else {
+           DSI_INFO("got backlight_map_type %drom qcom,backlight_map_type\n", panel->backlight_map_type);
+       }
 
        rc = of_property_read_u32(of_node,
                        "qcom,mdss-dsi-panel-param-verision",

@@ -408,6 +408,7 @@ struct dsi_panel {
 	int panel_recovery_retry;
 	bool is_panel_dead;
        int paramVersion;
+	int backlight_map_type;
 };
 
 bool dsi_display_all_displays_dead(void);

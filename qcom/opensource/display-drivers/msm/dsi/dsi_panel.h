@@ -405,6 +405,7 @@ struct dsi_panel {
 	bool tp_state_check_enable;
 
 	int paramVersion;
+	int backlight_map_type;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)

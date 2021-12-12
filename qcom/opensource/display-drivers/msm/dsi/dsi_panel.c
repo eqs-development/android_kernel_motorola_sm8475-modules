@@ -3104,6 +3104,9 @@ static int dsi_panel_parse_bl_config(struct dsi_panel *panel)
 	panel->bl_config.bl_2bytes_enable = utils->read_bool(utils->data,
 			"qcom,bklt-dcs-2bytes-enabled");
 
+	panel->bl_config.bl_is_exponent = utils->read_bool(utils->data,
+			"qcom,mdss-dsi-bl-is-exponent");
+
 	pr_info("[%s] bl_2bytes_enable=%d\n", panel->name,
 			panel->bl_config.bl_2bytes_enable);
 

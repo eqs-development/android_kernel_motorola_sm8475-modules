@@ -1084,13 +1084,14 @@ end:
 	mutex_unlock(&panel->panel_lock);
 	return rc;
 };
-
 static int dsi_panel_set_hbm(struct dsi_panel *panel,
                         struct msm_param_info *param_info)
 {
 	int rc = 0;
 
 	pr_info("Set HBM to (%d)\n", param_info->value);
+	if(panel->delect_dc_onoff && param_info->value==0)
+		mot_update_hbmoff(panel, param_info);
 
 	rc = dsi_panel_send_param_cmd(panel, param_info);
 	if (rc < 0) {
@@ -1138,6 +1139,10 @@ static int dsi_panel_set_dc(struct dsi_panel *panel,
 	int rc = 0;
 
 	pr_info("Set DC to (%d)\n", param_info->value);
+	if(panel->delect_dc_onoff && param_info->value)
+		panel->dc_on = true;
+	else
+		panel->dc_on = false;
 	rc = dsi_panel_send_param_cmd(panel, param_info);
 	if (rc < 0)
 		DSI_ERR("%s: failed to send param cmds. ret=%d\n", __func__, rc);
@@ -4340,7 +4345,8 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
        } else {
            DSI_INFO("got paramVersion %d from qcom,mdss-dsi-panel-param-verision\n", panel->paramVersion);
        }
-
+	panel->delect_dc_onoff = of_property_read_bool(of_node,
+				"qcom,delect_dc_onoff");
 	return rc;
 }
 

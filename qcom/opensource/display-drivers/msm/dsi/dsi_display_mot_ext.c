@@ -1363,4 +1363,25 @@ int dsi_display_ext_init(struct dsi_display *display)
 
 	return rc;
 }
+void mot_update_hbmoff(struct dsi_panel *panel,
+                        struct msm_param_info *param_info)
+{
+	struct panel_param_val_map *param_map;
+	struct panel_param_val_map *param_map_state;
+	struct dsi_cmd_desc *cmds;
+	u32 count;
+	u8 *payload;
+	param_map = panel->param_cmds[param_info->param_idx].val_map;
+	param_map_state = &param_map[param_info->value];
+	cmds = param_map_state->cmds->cmds;
+	count = param_map_state->cmds->count;
+	cmds++;
+	payload = (u8 *)cmds->msg.tx_buf;
+	if(panel->dc_on)
+		payload[1] = 0x00;
+	else
+		payload[1] = 0xD0;
+	pr_info("mot_update_hbmoff payload[0] = 0x%x payload[1] = 0x%x",payload[0],payload[1]);
+	cmds->msg.tx_buf = payload;
+}
 

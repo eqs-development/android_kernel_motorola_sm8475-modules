@@ -409,6 +409,9 @@ struct dsi_panel {
 
 	int paramVersion;
 	int backlight_map_type;
+	bool delect_dc_onoff;
+	bool dc_on;
+
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)
@@ -557,5 +560,7 @@ int dsi_panel_get_elvss_data(struct dsi_panel *panel);
 int dsi_panel_get_elvss_data_1(struct dsi_panel *panel);
 int dsi_panel_set_elvss_dim_off(struct dsi_panel *panel, u8 val);
 int dsi_panel_parse_elvss_config(struct dsi_panel *panel, u8 elv_vl);
+void mot_update_hbmoff(struct dsi_panel *panel,
+                        struct msm_param_info *param_info);
 
 #endif /* _DSI_PANEL_H_ */

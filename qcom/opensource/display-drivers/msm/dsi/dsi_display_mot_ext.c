@@ -39,6 +39,26 @@
 #include "sde_dbg.h"
 #include "dsi_parser.h"
 #include "dsi_display_mot_ext.h"
+u8 dsi_panel_cud_config_temperature[16][11] = {
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x00,0x00,0x00,0x00},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x0C,0x0C,0x0C,0x0C},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x19,0x19,0x19,0x19},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x26,0x26,0x26,0x26},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x33,0x33,0x33,0x33},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x40,0x40,0x40,0x40},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x49,0x49,0x49,0x49},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x53,0x53,0x53,0x53},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x5C,0x5C,0x5C,0x5C},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x66,0x66,0x66,0x66},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x70,0x70,0x70,0x70},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x76,0x76,0x76,0x76},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x7C,0x7C,0x7C,0x7C},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x83,0x83,0x83,0x83},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x89,0x89,0x89,0x89},
+{0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x90,0x90,0x90,0x90}
+};
+extern ssize_t mipi_dsi_dcs_write(struct mipi_dsi_device *dsi, u8 cmd,
+			   const void *data, size_t len);
 
 //Timer for pressure test and debug
 static struct alarm *g_wakeup_timer = NULL;
@@ -1314,6 +1334,73 @@ static ssize_t dsi_display_para_by_id_put(struct device *dev,
 
 	return count;
 }
+int dsi_panel_cud_config(struct dsi_display *display, int cud_index){
+	int rc = 0;
+	u8 Page0[] = {0x55,0xAA,0x52,0x08,0x08};
+	u8 Page1[] = {0x00,0x01,0x10,0x00,0x87,0x00,0x2C,0x00,0x00,0x00,0x00};
+
+	struct mipi_dsi_device *dsi;
+
+	dsi = &display->panel->mipi_device;
+	if (!display->panel) {
+		DSI_ERR("Invalid params\n");
+		return -EINVAL;
+	}
+	mutex_lock(&display->panel->panel_lock);
+	if ( display->panel->bl_config.bl_level > 0){
+		memcpy(Page1,dsi_panel_cud_config_temperature[cud_index-35],sizeof(Page1));
+		printk("cud_index %d  Page1[10] = 0x%x\n",cud_index, Page1[10]);
+
+		mipi_dsi_dcs_write(dsi, 0xF0, Page0, 5);
+		mipi_dsi_dcs_write(dsi, 0xD2, Page1, 11);
+	}
+	mutex_unlock(&display->panel->panel_lock);
+
+	printk("dsi_panel_cud_config bl_level%d\n",display->panel->bl_config.bl_level);
+	DSI_INFO("(%s)-\n", display->panel->name);
+	return rc;
+}
+
+static ssize_t dsi_display_config_cud_get(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int rc = 1;
+	return rc;
+}
+
+static ssize_t dsi_display_config_cud_put(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct drm_connector *conn;
+	struct sde_connector *sde_conn;
+	struct dsi_display *display;
+	static int g_param_cud_config = 0;
+
+	if (!dev || !buf) {
+		pr_err("%s: Invalid input: dev(%s), buf(%s)\n", __func__, dev? "valid" : "null", buf? "valid" : "null");
+		return count;
+	}
+
+	conn = dev_get_drvdata(dev);
+	sde_conn = to_sde_connector(conn);
+	display = sde_conn->display;
+	if (!display) {
+		pr_err("Invalid  input: display\n");
+		return count;
+	}
+
+	if (kstrtou32(buf, 10, &g_param_cud_config) < 0)
+		return count;
+
+	if (g_param_cud_config < 36)
+		g_param_cud_config = 35;
+	else if (g_param_cud_config > 50)
+		g_param_cud_config = 50;
+	printk("susan g_param_cud_config = %d",g_param_cud_config);
+
+	dsi_panel_cud_config(display,g_param_cud_config);
+	return count;
+}
 
 
 ///sys/devices/platform/soc/soc:qcom,dsi-display/
@@ -1330,12 +1417,16 @@ static DEVICE_ATTR(panel_para_by_id, 0664,
 			dsi_display_para_by_id_get,
 			dsi_display_para_by_id_put);
 
+static DEVICE_ATTR(panel_config_cud, 0664,
+			dsi_display_config_cud_get,
+			dsi_display_config_cud_put);
 
 static const struct attribute *dsi_display_mot_ext_fs_attrs[] = {
 	&dev_attr_dsi_display_wakeup.attr,
 	&dev_attr_pressure_test_en.attr,
 	&dev_attr_panel_parse_para.attr,
 	&dev_attr_panel_para_by_id.attr,
+	&dev_attr_panel_config_cud.attr,
 	NULL,
 };
 

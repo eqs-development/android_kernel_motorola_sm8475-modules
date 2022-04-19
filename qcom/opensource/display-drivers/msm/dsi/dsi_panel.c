@@ -4347,6 +4347,9 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
        }
 	panel->delect_dc_onoff = of_property_read_bool(of_node,
 				"qcom,delect_dc_onoff");
+
+	panel->mot_nt37701A_read_cellid = of_property_read_bool(of_node,
+				"qcom,mot_nt37701A_read_cellid");
 	return rc;
 }
 

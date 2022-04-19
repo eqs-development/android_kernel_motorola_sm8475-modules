@@ -411,7 +411,7 @@ struct dsi_panel {
 	int backlight_map_type;
 	bool delect_dc_onoff;
 	bool dc_on;
-
+	bool mot_nt37701A_read_cellid;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)

@@ -32,6 +32,7 @@
 #define DSI_MODE_MATCH_FULL_TIMINGS (DSI_MODE_MATCH_ACTIVE_TIMINGS | DSI_MODE_MATCH_PORCH_TIMINGS)
 #define DSI_MODE_MATCH_DSC_CONFIG (1 << 2)
 
+#define MAX_PANEL_CELLID      50
 /*
  * DSI Validate Mode modifiers
  * @DSI_VALIDATE_FLAG_ALLOW_ADJUST:	Allow mode validation to also do fixup
@@ -305,6 +306,8 @@ struct dsi_display {
 
 	bool enabled;
 	bool sysfs_add_done;
+	u8 cellid[MAX_PANEL_CELLID];
+	bool read_cellid;
 };
 
 int dsi_display_dev_probe(struct platform_device *pdev);
@@ -876,4 +879,6 @@ int dsi_display_restore_bit_clk(struct dsi_display *display, struct dsi_display_
 bool dsi_display_mode_match(const struct dsi_display_mode *mode1,
 		struct dsi_display_mode *mode2, unsigned int match_flags);
 
+void dsi_display_set_cmd_tx_ctrl_flags(struct dsi_display *display,
+		struct dsi_cmd_desc *cmd);
 #endif /* _DSI_DISPLAY_H_ */

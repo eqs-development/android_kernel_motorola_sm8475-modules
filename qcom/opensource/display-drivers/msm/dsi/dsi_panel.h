@@ -414,7 +414,7 @@ struct dsi_panel {
 	int backlight_map_type;
 	bool delect_dc_onoff;
 	bool dc_on;
-
+	bool mot_nt37701A_read_cellid;
 };
 
 bool dsi_display_all_displays_dead(void);

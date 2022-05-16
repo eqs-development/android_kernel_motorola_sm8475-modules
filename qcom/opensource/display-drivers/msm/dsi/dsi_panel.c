@@ -154,6 +154,18 @@ static int dsi_panel_gpio_request(struct dsi_panel *panel)
 		}
 	}
 
+	if (gpio_is_valid(r_config->vci_en_gpio)) {
+		rc = gpio_request(r_config->vci_en_gpio, "vci_en_gpio");
+		if (rc)
+			DSI_ERR("request for vci_en_gpio failed, rc=%d\n", rc);
+	}
+
+	if (gpio_is_valid(r_config->vio_en_gpio)) {
+		rc = gpio_request(r_config->vio_en_gpio, "vio_en_gpio");
+		if (rc)
+			DSI_ERR("request for vio_en_gpio failed, rc=%d\n", rc);
+	}
+
 	if (gpio_is_valid(panel->panel_test_gpio)) {
 		rc = gpio_request(panel->panel_test_gpio, "panel_test_gpio");
 		if (rc) {
@@ -194,6 +206,12 @@ static int dsi_panel_gpio_release(struct dsi_panel *panel)
 
 	if (gpio_is_valid(panel->reset_config.lcd_mode_sel_gpio))
 		gpio_free(panel->reset_config.lcd_mode_sel_gpio);
+
+	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
+		gpio_free(panel->reset_config.vio_en_gpio);
+
+	if (gpio_is_valid(panel->reset_config.vci_en_gpio))
+		gpio_free(panel->reset_config.vci_en_gpio);
 
 	if (gpio_is_valid(panel->panel_test_gpio))
 		gpio_free(panel->panel_test_gpio);
@@ -362,12 +380,18 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 {
 	int rc = 0;
 
+	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
+		gpio_set_value(panel->reset_config.vio_en_gpio, 1);
+
 	rc = dsi_pwr_enable_regulator(&panel->power_info, true);
 	if (rc) {
 		DSI_ERR("[%s] failed to enable vregs, rc=%d\n",
 				panel->name, rc);
 		goto exit;
 	}
+
+	if (gpio_is_valid(panel->reset_config.vci_en_gpio))
+		gpio_set_value(panel->reset_config.vci_en_gpio, 1);
 
 	rc = dsi_panel_set_pinctrl_state(panel, true);
 	if (rc) {
@@ -391,6 +415,12 @@ error_disable_gpio:
 
 	if (gpio_is_valid(panel->bl_config.en_gpio))
 		gpio_set_value(panel->bl_config.en_gpio, 0);
+
+	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
+		gpio_set_value(panel->reset_config.vio_en_gpio, 0);
+
+	if (gpio_is_valid(panel->reset_config.vci_en_gpio))
+		gpio_set_value(panel->reset_config.vci_en_gpio, 0);
 
 	(void)dsi_panel_set_pinctrl_state(panel, false);
 
@@ -428,10 +458,18 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 		       rc);
 	}
 
+	if (gpio_is_valid(panel->reset_config.vci_en_gpio))
+		gpio_set_value(panel->reset_config.vci_en_gpio, 0);
+
+	mdelay(5);
+
 	rc = dsi_pwr_enable_regulator(&panel->power_info, false);
 	if (rc)
 		DSI_ERR("[%s] failed to enable vregs, rc=%d\n",
 				panel->name, rc);
+
+	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
+		gpio_set_value(panel->reset_config.vio_en_gpio, 0);
 
 	return rc;
 }
@@ -2410,13 +2448,18 @@ static int dsi_panel_parse_gpios(struct dsi_panel *panel)
 	const char *data;
 	struct dsi_parser_utils *utils = &panel->utils;
 	char *reset_gpio_name, *mode_set_gpio_name;
+	char *vio_en_gpio_name, *vci_en_gpio_name;
 
 	if (!strcmp(panel->type, "primary")) {
 		reset_gpio_name = "qcom,platform-reset-gpio";
 		mode_set_gpio_name = "qcom,panel-mode-gpio";
+		vio_en_gpio_name = "qcom,platform-vio-enable-gpio";
+		vci_en_gpio_name = "qcom,platform-vci-enable-gpio";
 	} else {
 		reset_gpio_name = "qcom,platform-sec-reset-gpio";
 		mode_set_gpio_name = "qcom,panel-sec-mode-gpio";
+		vio_en_gpio_name = "qcom,platform-sec-vio-enable-gpio";
+		vci_en_gpio_name = "qcom,platform-sec-vci-enable-gpio";
 	}
 
 	panel->reset_config.reset_gpio = utils->get_named_gpio(utils->data,
@@ -2448,6 +2491,16 @@ static int dsi_panel_parse_gpios(struct dsi_panel *panel)
 		DSI_DEBUG("mode gpio not specified\n");
 
 	DSI_DEBUG("mode gpio=%d\n", panel->reset_config.lcd_mode_sel_gpio);
+
+	panel->reset_config.vio_en_gpio = utils->get_named_gpio(
+		utils->data, vio_en_gpio_name, 0);
+	if (!gpio_is_valid(panel->reset_config.vio_en_gpio))
+		DSI_DEBUG("vio_en_gpio gpio not specified\n");
+
+	panel->reset_config.vci_en_gpio = utils->get_named_gpio(
+		utils->data, vci_en_gpio_name, 0);
+	if (!gpio_is_valid(panel->reset_config.vci_en_gpio))
+		DSI_DEBUG("vci_en_gpio gpio not specified\n");
 
 	data = utils->get_property(utils->data,
 		"qcom,mdss-dsi-mode-sel-gpio-state", NULL);

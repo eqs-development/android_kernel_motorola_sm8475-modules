@@ -1545,7 +1545,7 @@ int mot_nt37701A_display_read_cellid(struct dsi_display_ctrl *ctrl,
 		pr_err("rx cmd transfer failed rc=%d\n", rc);
 		goto error;
 	}
-	display->read_cellid = true;
+	//display->read_cellid = true;
 	pr_info("---drm dsi 0xAC cellid---\n");
 
 error:

@@ -427,6 +427,7 @@ struct dsi_panel {
 	bool delect_dc_onoff;
 	bool dc_on;
 	bool mot_nt37701A_read_cellid;
+	bool esd_first_check;
 };
 
 bool dsi_display_all_displays_dead(void);

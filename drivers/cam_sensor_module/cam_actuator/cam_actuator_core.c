@@ -11,6 +11,10 @@
 #include "cam_trace.h"
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+#include "mot_actuator_policy.h"
+#include "mot_actuator.h"
+#endif
 
 int32_t cam_actuator_construct_default_power_setting(
 	struct cam_sensor_power_ctrl_t *power_info)
@@ -593,6 +597,14 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 			}
 			cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
 		}
+
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+		if (a_ctrl->cam_act_state == CAM_ACTUATOR_ACQUIRE) {
+			/*exile vibrator when camera want to take control of actuator*/
+			mot_actuator_handle_exile();
+			mot_actuator_get(ACTUATOR_CLIENT_CAMERA);
+		}
+#endif
 
 		if (a_ctrl->cam_act_state == CAM_ACTUATOR_ACQUIRE) {
 			rc = cam_actuator_power_up(a_ctrl);

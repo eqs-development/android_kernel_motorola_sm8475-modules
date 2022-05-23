@@ -252,6 +252,12 @@ camera-$(CONFIG_SPECTRA_SENSOR) += \
 	drivers/cam_sensor_module/cam_flash/cam_flash_core.o \
 	drivers/cam_sensor_module/cam_flash/cam_flash_soc.o
 
+ifneq (,$(filter $(CONFIG_AF_NOISE_ELIMINATION), y m))
+camera-$(CONFIG_SPECTRA_SENSOR) += \
+	drivers/cam_sensor_module/cam_actuator/mot_actuator.o \
+	drivers/cam_sensor_module/cam_actuator/mot_actuator_policy.o
+endif
+
 camera-$(CONFIG_CCI_DEBUG_INTF) += drivers/cam_sensor_module/cam_cci/cci_intf.o
 
 camera-$(CONFIG_SPECTRA_CUSTOM) += \

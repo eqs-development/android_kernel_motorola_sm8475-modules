@@ -400,6 +400,7 @@ static irqreturn_t ipa3_isr(int irq, void *ctxt)
 {
 	struct ipa_active_client_logging_info log_info;
 
+	IPADBG("+++ ipa3_isr Enter\n");
 	IPA_ACTIVE_CLIENTS_PREP_SIMPLE(log_info);
 	IPADBG_LOW("Enter\n");
 	/* defer interrupt handling in case IPA is not clocked on */
@@ -413,6 +414,7 @@ static irqreturn_t ipa3_isr(int irq, void *ctxt)
 	IPADBG_LOW("Exit\n");
 
 	ipa3_dec_client_disable_clks_no_block(&log_info);
+	IPADBG("+++ ipa3_isr Exit\n");
 	return IRQ_HANDLED;
 }
 

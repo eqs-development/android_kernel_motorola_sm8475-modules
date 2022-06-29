@@ -60,6 +60,8 @@ else ifneq (,$(filter eqs eqs_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/eqs.mk
 else ifneq (,$(filter bronco bronco_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/bronco.mk
+else ifneq (,$(filter felix felix_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/felix.mk
 endif
 
 # List of all camera-kernel headers

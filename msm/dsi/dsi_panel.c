@@ -312,11 +312,10 @@ static int dsi_panel_gpio_release(struct dsi_panel *panel)
 	if (gpio_is_valid(panel->reset_config.lcd_mode_sel_gpio))
 		gpio_free(panel->reset_config.lcd_mode_sel_gpio);
 
-	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
-		gpio_free(panel->reset_config.vio_en_gpio);
-
 	if (gpio_is_valid(panel->reset_config.vci_en_gpio))
 		gpio_free(panel->reset_config.vci_en_gpio);
+	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
+		gpio_free(panel->reset_config.vio_en_gpio);
 
 	if (gpio_is_valid(panel->panel_test_gpio))
 		gpio_free(panel->panel_test_gpio);
@@ -553,11 +552,11 @@ error_disable_gpio:
 	if (gpio_is_valid(panel->bl_config.en_gpio))
 		gpio_set_value(panel->bl_config.en_gpio, 0);
 
-	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
-		gpio_set_value(panel->reset_config.vio_en_gpio, 0);
-
 	if (gpio_is_valid(panel->reset_config.vci_en_gpio))
 		gpio_set_value(panel->reset_config.vci_en_gpio, 0);
+
+	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
+		gpio_set_value(panel->reset_config.vio_en_gpio, 0);
 
 	(void)dsi_panel_set_pinctrl_state(panel, false);
 
@@ -604,16 +603,16 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 		       rc);
 	}
 
-	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
-		gpio_set_value(panel->reset_config.vio_en_gpio, 0);
+	if (gpio_is_valid(panel->reset_config.vci_en_gpio))
+		gpio_set_value(panel->reset_config.vci_en_gpio, 0);
 
 	rc = dsi_pwr_enable_regulator(&panel->power_info, false);
 	if (rc)
 		DSI_ERR("[%s] failed to enable vregs, rc=%d\n",
 				panel->name, rc);
 
-	if (gpio_is_valid(panel->reset_config.vci_en_gpio))
-		gpio_set_value(panel->reset_config.vci_en_gpio, 0);
+	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
+		gpio_set_value(panel->reset_config.vio_en_gpio, 0);
 
 exit:
 	return rc;

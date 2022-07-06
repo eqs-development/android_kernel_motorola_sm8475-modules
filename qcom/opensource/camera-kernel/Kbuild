@@ -58,6 +58,8 @@ else ifneq (,$(filter oneli oneli_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/oneli.mk
 else ifneq (,$(filter eqs eqs_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/eqs.mk
+else ifneq (,$(filter bronco bronco_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/bronco.mk
 endif
 
 # List of all camera-kernel headers
@@ -235,6 +237,7 @@ camera-$(CONFIG_SPECTRA_SENSOR) += \
 	drivers/cam_sensor_module/cam_ois/cam_ois_dev.o \
 	drivers/cam_sensor_module/cam_ois/cam_ois_core.o \
 	drivers/cam_sensor_module/cam_ois/cam_ois_dw9781.o \
+	drivers/cam_sensor_module/cam_ois/cam_ois_dw9784.o \
 	drivers/cam_sensor_module/cam_ois/cam_ois_soc.o \
 	drivers/cam_sensor_module/cam_sensor/cam_sensor_dev.o \
 	drivers/cam_sensor_module/cam_sensor/cam_sensor_core.o \

@@ -775,8 +775,13 @@ static int dsi_panel_update_backlight(struct dsi_panel *panel,
 		mode_flags = dsi->mode_flags;
 		dsi->mode_flags |= MIPI_DSI_MODE_LPM;
 	}
-	if(panel->backlight_map_type > 0)
+	if(panel->backlight_map_type == 1)
 		bl_lvl = mot_backlight_level[bl_lvl][panel->backlight_map_type-1];
+	else if(panel->backlight_map_type == 2 && bl_lvl <= 3515){
+		DSI_INFO("tianma map bl_lvl = %d",mot_backlight_level_eqs[bl_lvl]);
+		bl_lvl = mot_backlight_level_eqs[bl_lvl];
+	}
+
 	if (panel->bl_config.bl_inverted_dbv)
 		bl_lvl = (((bl_lvl & 0xff) << 8) | (bl_lvl >> 8));
 
@@ -1147,7 +1152,7 @@ static int dsi_panel_set_local_hbm_param(struct dsi_panel *panel,
 	struct panel_param_val_map *param_map_state;
 	struct panel_param *panel_param;
 	struct dsi_cmd_desc *cmds;
-
+	u32 hbm_bl_lvl;
 
 	panel_param = &panel->param_cmds[param_info->param_idx];
 	if (!panel_param) {
@@ -1177,18 +1182,22 @@ static int dsi_panel_set_local_hbm_param(struct dsi_panel *panel,
 
 		cmds = param_map_state->cmds->cmds;
 		count = param_map_state->cmds->count;
+		if(panel->backlight_map_type == 2 && lhbm_config->dbv_level <= 3515 ){
+			hbm_bl_lvl = mot_backlight_level_eqs[lhbm_config->dbv_level];
+		}else
+			hbm_bl_lvl = lhbm_config->dbv_level;
 
 		for (i =0; i < count; i++) {
 			payload = (u8 *)cmds->msg.tx_buf;
 			if(param_info->value == HBM_FOD_ON_STATE &&
 				payload[0] == lhbm_config->alpha_reg) {
-				if(lhbm_config->dbv_level >lhbm_config->alpha_size) {
-					DSI_ERR("unsupport dbv level %d on local hbm\n", lhbm_config->dbv_level);
+				if(hbm_bl_lvl >lhbm_config->alpha_size) {
+					DSI_ERR("unsupport dbv level %d on local hbm\n", hbm_bl_lvl);
 					rc = -EINVAL;
 					goto end;
 				}
 
-				alpha = lhbm_config->alpha[lhbm_config->dbv_level];
+				alpha = lhbm_config->alpha[hbm_bl_lvl];
 				payload[1] = (alpha&0xff00)>>8;
 				payload[2] = alpha&0xff;
 				DSI_INFO("%s: alpha [%x]=%x%x\n",
@@ -1197,10 +1206,10 @@ static int dsi_panel_set_local_hbm_param(struct dsi_panel *panel,
 				goto end;
 			} else if(param_info->value == HBM_OFF_STATE &&
 				payload[0] == 0x51) {
-				payload[1] = (lhbm_config->dbv_level&0xff00)>>8;
-				payload[2] = lhbm_config->dbv_level&0xff;
+				payload[1] = (hbm_bl_lvl&0xff00)>>8;
+				payload[2] = hbm_bl_lvl&0xff;
 				DSI_INFO("%s: restore backlight level=%d\n",
-				        __func__, lhbm_config->dbv_level);
+				        __func__, hbm_bl_lvl);
 				rc =  0;
 				goto end;
 			}

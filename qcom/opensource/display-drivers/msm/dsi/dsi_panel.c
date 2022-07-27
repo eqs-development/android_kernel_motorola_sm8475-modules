@@ -1225,6 +1225,8 @@ static int dsi_panel_set_hbm(struct dsi_panel *panel,
 		mot_update_hbmoff(panel, param_info);
 
 	if(lhbm_config->enable && param_info->value != HBM_ON_STATE) {
+		if(param_info->value == HBM_FOD_ON_STATE)
+			msleep(20);
 		dsi_panel_set_local_hbm_param(panel, param_info, lhbm_config);
 	}
 

@@ -1189,21 +1189,35 @@ static int dsi_panel_set_local_hbm_param(struct dsi_panel *panel,
 
 		for (i =0; i < count; i++) {
 			payload = (u8 *)cmds->msg.tx_buf;
-			if(param_info->value == HBM_FOD_ON_STATE &&
-				payload[0] == lhbm_config->alpha_reg) {
-				if(hbm_bl_lvl >lhbm_config->alpha_size) {
-					DSI_ERR("unsupport dbv level %d on local hbm\n", hbm_bl_lvl);
-					rc = -EINVAL;
-					goto end;
-				}
+			if(param_info->value == HBM_FOD_ON_STATE) {
+				if(payload[0] == lhbm_config->alpha_reg) {
+					if(hbm_bl_lvl >lhbm_config->alpha_size) {
+						DSI_ERR("unsupport dbv level %d on local hbm\n", hbm_bl_lvl);
+						rc = -EINVAL;
+						goto end;
+					}
 
-				alpha = lhbm_config->alpha[hbm_bl_lvl];
-				payload[1] = (alpha&0xff00)>>8;
-				payload[2] = alpha&0xff;
-				DSI_INFO("%s: alpha [%x]=%x%x\n",
-				        __func__, payload[0], payload[1], payload[2]);
-				rc =  0;
-				goto end;
+					alpha = lhbm_config->alpha[hbm_bl_lvl];
+					payload[1] = (alpha&0xff00)>>8;
+					payload[2] = alpha&0xff;
+					DSI_INFO("%s: alpha [%x]=%x%x\n",
+						__func__, payload[0], payload[1], payload[2]);
+					rc =  0;
+					continue;
+				} else if(payload[0] == 0X51 &&
+					lhbm_config->dc_hybird_threshold != 0) {
+					if(hbm_bl_lvl < lhbm_config->dc_hybird_threshold) {
+						payload[1] = (lhbm_config->dc_hybird_threshold & 0xff00) >> 8;
+						payload[2] = lhbm_config->dc_hybird_threshold & 0xff;
+
+					} else {
+						payload[1] = (hbm_bl_lvl & 0xff00) >> 8;
+						payload[2] = hbm_bl_lvl & 0xff;
+					}
+					DSI_INFO("%s: [%x]=%x%x\n",
+						__func__, payload[0], payload[1], payload[2]);
+					continue;
+				}
 			} else if(param_info->value == HBM_OFF_STATE &&
 				payload[0] == 0x51) {
 				payload[1] = (hbm_bl_lvl&0xff00)>>8;
@@ -4375,6 +4389,15 @@ static int dsi_panel_parse_local_hbm_config(struct dsi_panel *panel)
 			lhbm_config->enable = false;
 			return rc;
 		}
+		rc = utils->read_u32(utils->data,
+			"qcom,mdss-dsi-panel-local-hbm-DC-HYBIRD-THRESHOLD-BL",
+			&(lhbm_config->dc_hybird_threshold));
+		if (rc) {
+			DSI_ERR("%s:qcom,mdss-dsi-panel-local-hbm-DC-HYBIRD-THRESHOLD-BL is not defined, set it to 0\n", __func__);
+			lhbm_config->dc_hybird_threshold = 0;
+		}
+
+
 	} else {
 		DSI_INFO("%s:%d, no local hbm config\n",
 				__func__, __LINE__);

@@ -1186,7 +1186,7 @@ static int dsi_panel_set_local_hbm_param(struct dsi_panel *panel,
 		}else
 			hbm_bl_lvl = lhbm_config->dbv_level;
 
-		for (i =0; i < count; i++) {
+		for (i =0; i < count; i++,cmds++) {
 			payload = (u8 *)cmds->msg.tx_buf;
 			if(param_info->value == HBM_FOD_ON_STATE) {
 				if(payload[0] == lhbm_config->alpha_reg) {
@@ -1226,7 +1226,6 @@ static int dsi_panel_set_local_hbm_param(struct dsi_panel *panel,
 				rc =  0;
 				goto end;
 			}
-			cmds++;
 		}
 	}
 
@@ -1261,7 +1260,7 @@ static int dsi_panel_set_hbm(struct dsi_panel *panel,
 		else
 			bl_lvl = HBM_BRIGHTNESS(param_info->value);
 		mutex_lock(&panel->panel_lock);
-		rc = dsi_panel_set_backlight(panel, HBM_BRIGHTNESS(param_info->value));
+		rc = dsi_panel_set_backlight(panel, bl_lvl);
 		mutex_unlock(&panel->panel_lock);
 		if (rc)
 			DSI_ERR("unable to set backlight\n");

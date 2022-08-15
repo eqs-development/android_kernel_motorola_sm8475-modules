@@ -936,6 +936,9 @@ int32_t cam_actuator_driver_cmd(struct cam_actuator_ctrl_t *a_ctrl,
 		}
 
 		if (a_ctrl->cam_act_state == CAM_ACTUATOR_CONFIG) {
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+			mot_actuator_put(ACTUATOR_CLIENT_CAMERA);
+#endif
 			rc = cam_actuator_power_down(a_ctrl);
 			if (rc < 0) {
 				CAM_ERR(CAM_ACTUATOR,

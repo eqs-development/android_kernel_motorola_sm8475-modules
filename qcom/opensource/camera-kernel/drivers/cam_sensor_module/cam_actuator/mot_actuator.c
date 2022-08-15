@@ -41,6 +41,7 @@ typedef enum {
 	MOT_ACTUATOR_INVALID,
 	MOT_ACTUATOR_FIRST,
 	MOT_ACTUATOR_DW9800 = MOT_ACTUATOR_FIRST,
+	MOT_ACTUATOR_AK7377,
 	MOT_ACTUATOR_NUM,
 } mot_actuator_type;
 
@@ -51,7 +52,8 @@ typedef enum {
 } mot_regulator_type;
 
 typedef enum {
-    MOT_DEVICE_ONELI,
+	MOT_DEVICE_ONELI,
+	MOT_DEVICE_EQS,
 	MOT_DEVICE_NUM,
 } mot_dev_type;
 
@@ -91,6 +93,7 @@ typedef struct {
 	bool park_lens_needed;
 	bool reset_lens_needed;
 	mot_launch_lens launch_lens;
+	uint16_t poweron_delay;//ms
 } mot_actuator_hw_info;
 
 typedef struct {
@@ -128,9 +131,34 @@ static struct cam_sensor_i2c_reg_setting mot_dw9800_dac_settings = {
 	.data_type = CAMERA_SENSOR_I2C_TYPE_WORD,
 };
 
+static struct cam_sensor_i2c_reg_array mot_ak7377_init_setting[] = {
+	{0x00, 0x8f, 100},
+	{0x01, 0x00, 100},
+	{0x02, 0x00, 100},
+};
+
+static struct cam_sensor_i2c_reg_array mot_ak7377_dac_setting[] = {
+	{0x00, 0x8f00, 0},
+};
+
+static struct cam_sensor_i2c_reg_setting mot_ak7377_init_settings = {
+	.reg_setting = mot_ak7377_init_setting,
+	.size = ARRAY_SIZE(mot_ak7377_init_setting),
+	.addr_type = CAMERA_SENSOR_I2C_TYPE_BYTE,
+	.data_type = CAMERA_SENSOR_I2C_TYPE_BYTE,
+};
+
+static struct cam_sensor_i2c_reg_setting mot_ak7377_dac_settings = {
+	.reg_setting = mot_ak7377_dac_setting,
+	.size = ARRAY_SIZE(mot_ak7377_dac_setting),
+	.addr_type = CAMERA_SENSOR_I2C_TYPE_BYTE,
+	.data_type = CAMERA_SENSOR_I2C_TYPE_WORD,
+};
+
 static mot_actuator_settings mot_actuator_list[MOT_ACTUATOR_NUM-1] = {
 	//MUST be sorted as definition order in above structure: mot_actuator_type
 	{&mot_dw9800_init_settings, &mot_dw9800_dac_settings},
+	{&mot_ak7377_init_settings, &mot_ak7377_dac_settings},
 };
 
 static const mot_dev_info mot_dev_list[MOT_DEVICE_NUM] = {
@@ -148,6 +176,24 @@ static const mot_dev_info mot_dev_list[MOT_DEVICE_NUM] = {
 				.regulator_list = {"ldo7", "ldo4"},
 				.regulator_volt_uv = {1800000, 2800000},
 				.park_lens_needed = true,
+			},
+		},
+	},
+	{
+		.dev_type = MOT_DEVICE_EQS,
+		.actuator_num = 1,
+		.dev_name = "eqs",
+		.actuator_info = {
+			[0] = {
+				.actuator_type = MOT_ACTUATOR_AK7377,
+				.dac_pos = 0x8F00,
+				.cci_addr = 0x0c,
+				.cci_dev = 0x00,
+				.cci_master = 0x00,
+				.regulator_list = {"ldo7", "ldo5"},
+				.regulator_volt_uv = {3104000, 1800000},
+				.park_lens_needed = false,
+				.poweron_delay = 6,//ms
 			},
 		},
 	},
@@ -224,6 +270,7 @@ static int cam_select_actuator_by_device_name(void)
 
 /*=================ACTUATOR RUNTIME====================*/
 #define VIBRATING_MAX_INTERVAL 2000//ms
+#define PHONE_DROP_MAX_DURATION 5000//ms
 #define PARK_LENS_MAX_STAGES 10
 #define RESET_LENS_MAX_STAGES 10
 #define LAUNCH_LENS_MAX_STAGES LENS_MAX_STAGES
@@ -245,6 +292,12 @@ enum mot_actuator_state_e {
 	MOT_ACTUATOR_RELEASED
 };
 
+enum mot_actuator_scenario_e {
+	MOT_ACTUATOR_SCENE_INVALID,
+	MOT_ACTUATOR_VIB,
+	MOT_ACTUATOR_LENS_PROTECT,
+};
+
 typedef struct {
 	struct cam_sensor_cci_client client;
 	struct camera_io_master io_master;
@@ -254,6 +307,7 @@ typedef struct {
 
 static struct mot_actuator_ctrl_t mot_actuator_fctrl;
 static enum mot_actuator_state_e mot_actuator_state = MOT_ACTUATOR_IDLE;
+static enum mot_actuator_scenario_e mot_actuator_scene = MOT_ACTUATOR_VIB;
 static mot_actuator_runtime_type mot_actuator_runtime[MAX_ACTUATOR_NUM];
 static uint32_t lens_safe_pos_dac = 0;
 static uint32_t lens_park_pos = 100;
@@ -367,6 +421,7 @@ static int32_t mot_actuator_power_on(uint32_t index)
 {
 	int i;
 	int ret = 0;
+	uint16_t delayms = mot_dev_list[mot_device_index].actuator_info[index].poweron_delay;
 
 	for (i = 0; i < REGULATOR_NUM; i++) {
 		if (mot_actuator_runtime[index].regulators[i] != NULL) {
@@ -375,6 +430,10 @@ static int32_t mot_actuator_power_on(uint32_t index)
 				CAM_ERR(CAM_ACTUATOR, "power on regulators[%d] failed, ret:%d", i,ret);
 			}
 		}
+	}
+
+	if (delayms > 0) {
+		usleep_range(delayms*1000, (delayms+1)*1000);
 	}
 
 	return ret;
@@ -552,6 +611,7 @@ static int32_t mot_actuator_vib_move_lens(uint32_t index)
 			if (ret == 0) {
 				CAM_WARN(CAM_ACTUATOR, "init acutator sucess", ret);
 				mot_actuator_state = MOT_ACTUATOR_INITED;
+				usleep_range(500,1000);
 			} else {
 				mot_actuator_release_cci(index);
 				CAM_ERR(CAM_ACTUATOR, "init acutator failed, ret=%d!!!", ret);
@@ -678,12 +738,16 @@ EXPORT_SYMBOL(mot_actuator_on_vibrate_start);
 
 int mot_actuator_on_vibrate_stop(void)
 {
+	uint32_t delayms = VIBRATING_MAX_INTERVAL;
+	if (mot_actuator_scene == MOT_ACTUATOR_LENS_PROTECT) {
+		delayms = PHONE_DROP_MAX_DURATION;
+	}
 	if (mot_actuator_fctrl.mot_actuator_wq != NULL) {
 		queue_delayed_work(mot_actuator_fctrl.mot_actuator_wq,
-			&mot_actuator_fctrl.delay_work, msecs_to_jiffies(VIBRATING_MAX_INTERVAL));
+			&mot_actuator_fctrl.delay_work, msecs_to_jiffies(delayms));
 	} else {
 		//Dedicated work queue may create failed, use default one.
-		schedule_delayed_work(&mot_actuator_fctrl.delay_work, msecs_to_jiffies(VIBRATING_MAX_INTERVAL));
+		schedule_delayed_work(&mot_actuator_fctrl.delay_work, msecs_to_jiffies(delayms));
 	}
 	return 0;
 }
@@ -978,7 +1042,12 @@ static ssize_t msm_actuator_store(struct device *dev,
 	}
 
 	if (input) {
-		CAM_DBG(CAM_ACTUATOR, "start actuator");
+		if (input == MOT_ACTUATOR_LENS_PROTECT) {
+			mot_actuator_scene = MOT_ACTUATOR_LENS_PROTECT;
+		} else {
+			mot_actuator_scene = MOT_ACTUATOR_VIB;
+		}
+		CAM_DBG(CAM_ACTUATOR, "start actuator, scene: %d", mot_actuator_scene);
 		mot_actuator_on_vibrate_start();
 	} else {
 		CAM_DBG(CAM_ACTUATOR, "stop actuator");

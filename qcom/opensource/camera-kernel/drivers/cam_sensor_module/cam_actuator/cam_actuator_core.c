@@ -610,7 +610,7 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 #ifdef CONFIG_AF_NOISE_ELIMINATION
 		if (a_ctrl->cam_act_state == CAM_ACTUATOR_ACQUIRE) {
 			/*exile vibrator when camera want to take control of actuator*/
-			mot_actuator_handle_exile();
+			//mot_actuator_handle_exile();
 			mot_actuator_get(ACTUATOR_CLIENT_CAMERA);
 		}
 #endif

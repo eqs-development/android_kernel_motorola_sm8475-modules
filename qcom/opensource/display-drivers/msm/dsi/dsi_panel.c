@@ -918,11 +918,6 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 	if (panel->host_config.ext_bridge_mode)
 		return 0;
 
-	if(panel->lhbm_config.enable) {
-		panel->lhbm_config.dbv_level = bl_lvl;
-		DSI_INFO("backlight type:%d dbv lvl:%d\n", bl->type, bl_lvl);
-	}
-
 	if (dsi_panel_set_hbm_backlight(panel, &bl_lvl))
 		return 0;
 
@@ -1246,9 +1241,10 @@ static int dsi_panel_set_hbm(struct dsi_panel *panel,
 	if(panel->delect_dc_onoff && param_info->value==0)
 		mot_update_hbmoff(panel, param_info);
 
+	if(param_info->value == HBM_FOD_ON_STATE) msleep(20);
+
 	if(lhbm_config->enable && param_info->value != HBM_ON_STATE) {
-		if(param_info->value == HBM_FOD_ON_STATE)
-			msleep(20);
+		lhbm_config->dbv_level = panel->bl_lvl_during_hbm;
 		dsi_panel_set_local_hbm_param(panel, param_info, lhbm_config);
 	}
 
@@ -1256,10 +1252,7 @@ static int dsi_panel_set_hbm(struct dsi_panel *panel,
 	if (rc < 0) {
 		DSI_ERR("%s: failed to send param cmds. ret=%d\n", __func__, rc);
 	} else {
-		if(lhbm_config->enable)
-			bl_lvl = lhbm_config->dbv_level;
-		else
-			bl_lvl = HBM_BRIGHTNESS(param_info->value);
+		bl_lvl = HBM_BRIGHTNESS(param_info->value);
 		mutex_lock(&panel->panel_lock);
 		rc = dsi_panel_set_backlight(panel, bl_lvl);
 		mutex_unlock(&panel->panel_lock);

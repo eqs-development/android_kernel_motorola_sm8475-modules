@@ -444,6 +444,7 @@ struct dsi_panel {
 	bool dc_on;
 	bool mot_nt37701A_read_cellid;
 	bool esd_first_check;
+	int dc_state;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)
@@ -598,3 +599,4 @@ int dsi_panel_dfps_send_cmd(struct dsi_panel *panel);
 int dsi_panel_tx_cellid_cmd(struct dsi_panel *panel);
 
 #endif /* _DSI_PANEL_H_ */
+

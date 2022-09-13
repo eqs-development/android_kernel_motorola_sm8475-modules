@@ -1342,6 +1342,7 @@ static int dsi_panel_set_dc(struct dsi_panel *panel,
 		panel->dc_on = true;
 	else
 		panel->dc_on = false;
+	panel->dc_state = param_info->value;
 	rc = dsi_panel_send_param_cmd(panel, param_info);
 	if (rc < 0)
 		DSI_ERR("%s: failed to send param cmds. ret=%d\n", __func__, rc);
@@ -6530,3 +6531,4 @@ int dsi_panel_tx_cellid_cmd(struct dsi_panel *panel)
 error:
 	return rc;
 }
+

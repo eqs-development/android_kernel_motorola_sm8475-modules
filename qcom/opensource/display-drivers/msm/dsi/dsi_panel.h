@@ -134,6 +134,7 @@ struct dsi_dfps_capabilities {
 	u32 dfps_list_len;
 	bool dfps_support;
 	bool dfps_send_cmd_support;
+	u32 panel_on_fps;
 };
 
 struct dsi_qsync_capabilities {

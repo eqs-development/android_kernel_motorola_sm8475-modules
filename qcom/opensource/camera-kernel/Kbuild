@@ -64,8 +64,10 @@ else ifneq (,$(filter bronco_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/bronco_factory.mk
 else ifneq (,$(filter felix felix_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/felix.mk
-else ifneq (,$(filter zeekr zeekr_factory, $(TARGET_PRODUCT)))
+else ifneq (,$(filter zeekr, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/zeekr.mk
+else ifneq (,$(filter zeekr_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/zeekr_factory.mk
 else ifneq (,$(filter geneva geneva_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/geneva.mk
 else ifneq (,$(filter genevn genevn_factory, $(TARGET_PRODUCT)))

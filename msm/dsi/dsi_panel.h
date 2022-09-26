@@ -448,6 +448,7 @@ struct dsi_panel {
 	bool mot_nt37701A_read_cellid;
 	bool esd_first_check;
 	int dc_state;
+	int panel_power_cnt;
 };
 
 bool dsi_display_all_displays_dead(void);

@@ -1933,6 +1933,14 @@ static int wsa883x_event_notify(struct notifier_block *nb,
 						WSA883X_DRE_CTL_1,
 						0x01, 0x00);
 				/* Added delay as per HW sequence */
+				usleep_range(5000, 5000);
+			} else {
+				/* Added delay as per HW sequence */
+				usleep_range(3000, 3100);
+				snd_soc_component_update_bits(wsa883x->component,
+						WSA883X_DRE_CTL_1,
+						0x01, 0x01);
+				/* Added delay as per HW sequence */
 				usleep_range(5000, 5050);
 			}
 		}

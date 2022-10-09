@@ -68,6 +68,8 @@ else ifneq (,$(filter zeekr zeekr_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/zeekr.mk
 else ifneq (,$(filter geneva geneva_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/geneva.mk
+else ifneq (,$(filter genevn genevn_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/genevn.mk
 endif
 
 # List of all camera-kernel headers

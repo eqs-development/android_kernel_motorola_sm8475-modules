@@ -479,7 +479,30 @@ static int dsi_panel_set_pinctrl_state(struct dsi_panel *panel, bool enable)
 	return rc;
 }
 
-#if defined(CONFIG_PANEL_NOTIFICATIONS)
+int touch_state[PANEL_IDX_MAX] = {0};
+int touch_set_state(int state, int panel_idx)
+{
+	int rc = 0;
+
+	if (panel_idx >= PANEL_IDX_MAX)
+		rc = -EINVAL;
+	else
+		touch_state[panel_idx] = state;
+
+	return rc;
+}
+EXPORT_SYMBOL_GPL(touch_set_state);
+
+int check_touch_state(int *state, int panel_idx)
+{
+	int rc = 0;
+
+	if (panel_idx >= PANEL_IDX_MAX) rc = -EINVAL;
+	else *state = touch_state[panel_idx];
+
+	return rc;
+}
+
 static bool panel_power_is_alway_on(struct dsi_panel *panel)
 {
 	int touch_state = 0;
@@ -499,12 +522,6 @@ static bool panel_power_is_alway_on(struct dsi_panel *panel)
 
 	return rc;
 }
-#else
-static bool panel_power_is_alway_on(struct dsi_panel *panel)
-{
-	return 0;
-}
-#endif
 
 static int dsi_panel_power_on(struct dsi_panel *panel)
 {

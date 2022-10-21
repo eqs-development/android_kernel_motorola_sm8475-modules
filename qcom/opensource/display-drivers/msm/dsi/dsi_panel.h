@@ -442,6 +442,7 @@ struct dsi_panel {
 
 	enum touch_state tp_state;
 	bool tp_state_check_enable;
+	bool tp_state_need_reset;
 
 	int panel_recovery_retry;
 	bool is_panel_dead;

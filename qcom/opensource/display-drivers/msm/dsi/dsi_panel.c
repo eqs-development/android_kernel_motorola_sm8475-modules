@@ -530,7 +530,13 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 	DSI_INFO("(%s)+\n", panel->name);
 
 	if ((panel->tp_state_check_enable) && (panel->tp_state)) {
-		pr_info("%s: (%s)+power is alway on \n", __func__, panel->name);
+		if( (panel->tp_state_need_reset)) {
+			pr_info("%s: (%s)+power is alway on, but need reset \n", __func__, panel->name);
+			rc = dsi_panel_reset(panel);
+			if (rc)
+				DSI_ERR("[%s] failed to reset panel, rc=%d\n", panel->name, rc);
+		} else
+			pr_info("%s: (%s)+power is alway on \n", __func__, panel->name);
 		goto exit;
 	}
 	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
@@ -4847,6 +4853,9 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
 
 	panel->tp_state_check_enable = of_property_read_bool(of_node,
 				"qcom,tp_state_check_enable");
+
+	panel->tp_state_need_reset = of_property_read_bool(of_node,
+				"qcom,tp_state_need_reset");
 
 	rc = of_property_read_u32(of_node,
 				"qcom,backlight_map_type",&panel->backlight_map_type);

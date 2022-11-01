@@ -1206,6 +1206,10 @@ static int dsi_panel_send_param_cmd(struct dsi_panel *panel,
 			cmds++;
 		}
 		panel_param->value = param_info->value;
+		if (!strcmp(panel_param->param_name, "DC")){
+			panel->dc_state = param_info->value;
+			pr_info("%s: panel->dc_state (%d)\n", __func__, panel->dc_state);
+		}
 		DSI_INFO("(%d) is setting new value %d\n",
 			param_info->param_idx, param_info->value);
 		rc = len;
@@ -1424,7 +1428,6 @@ static int dsi_panel_set_dc(struct dsi_panel *panel,
 		panel->dc_on = true;
 	else
 		panel->dc_on = false;
-	panel->dc_state = param_info->value;
 	memcpy(&panel->curDCModeParaInfo, param_info, sizeof(struct msm_param_info));
 	rc = dsi_panel_send_param_cmd(panel, param_info);
 	if (rc < 0)

@@ -13,6 +13,19 @@
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
 
+#ifdef CONFIG_MOT_DONGWOON_OIS_AF_DRIFT
+int m_sensor_stream_on = 0;
+
+int cam_sensor_get_stream_info(void)
+{
+	return m_sensor_stream_on;
+}
+
+static void cam_sensor_set_stream_info(int value)
+{
+	m_sensor_stream_on = value;
+}
+#endif
 
 static int cam_sensor_update_req_mgr(
 	struct cam_sensor_ctrl_t *s_ctrl,
@@ -1297,6 +1310,11 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 		CAM_GET_TIMESTAMP(ts);
 		CAM_CONVERT_TIMESTAMP_FORMAT(ts, hrs, min, sec, ms);
 
+#ifdef CONFIG_MOT_DONGWOON_OIS_AF_DRIFT
+		if (strstr(s_ctrl->sensor_name, "ov50a"))
+			cam_sensor_set_stream_info(1);
+#endif
+
 		CAM_INFO(CAM_SENSOR,
 			"%llu:%llu:%llu.%llu CAM_START_DEV Success for %s sensor_id:0x%x,sensor_slave_addr:0x%x",
 			hrs, min, sec, ms,
@@ -1331,6 +1349,11 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 
 		CAM_GET_TIMESTAMP(ts);
 		CAM_CONVERT_TIMESTAMP_FORMAT(ts, hrs, min, sec, ms);
+
+#ifdef CONFIG_MOT_DONGWOON_OIS_AF_DRIFT
+	if (strstr(s_ctrl->sensor_name, "ov50a"))
+		cam_sensor_set_stream_info(0);
+#endif
 
 		CAM_INFO(CAM_SENSOR,
 			"%llu:%llu:%llu.%llu CAM_STOP_DEV Success for %s sensor_id:0x%x,sensor_slave_addr:0x%x",

@@ -6476,6 +6476,20 @@ void dsi_display_dev_shutdown(struct platform_device *pdev)
 		if (rc)
 			DSI_WARN("set dir for panel test gpio failed rc=%d\n", rc);
 	}
+
+	if (gpio_is_valid(panel->reset_config.touch_rst_gpio)) {
+		rc = gpio_request(panel->reset_config.touch_rst_gpio, "touch-rst-pin");
+		if (rc) {
+			DSI_ERR("request for touch-rst-pin failed, rc=%d\n", rc);
+			gpio_free(panel->reset_config.touch_rst_gpio);
+			gpio_set_value(panel->reset_config.touch_rst_gpio, 0);
+		} else {
+			gpio_set_value(panel->reset_config.touch_rst_gpio, 0);
+		}
+	} else {
+		DSI_INFO("[%s] touch reset gpio is not specified\n", panel->name);
+	}
+
 	mdelay(5);
 	rc = dsi_pwr_enable_regulator(&panel->power_info, false);
 	if (rc)

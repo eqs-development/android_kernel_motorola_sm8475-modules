@@ -224,6 +224,7 @@ struct dsi_panel_reset_config {
 	u32 mode_sel_state;
 	int vio_en_gpio;
 	int vci_en_gpio;
+	int touch_rst_gpio;
 };
 
 enum esd_check_status_mode {

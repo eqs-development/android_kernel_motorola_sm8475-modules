@@ -3240,6 +3240,7 @@ static int dsi_panel_parse_gpios(struct dsi_panel *panel)
 		mode_set_gpio_name = "qcom,panel-sec-mode-gpio";
 		vio_en_gpio_name = "qcom,platform-sec-vio-enable-gpio";
 		vci_en_gpio_name = "qcom,platform-sec-vci-enable-gpio";
+		touch_rst_gpio_name = "touch-rst-pin";
 	}
 
 	panel->reset_config.reset_gpio = utils->get_named_gpio(utils->data,

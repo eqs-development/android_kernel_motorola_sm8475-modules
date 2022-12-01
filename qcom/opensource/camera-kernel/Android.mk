@@ -1,3 +1,4 @@
+ifneq ($(BOARD_USES_LEGACY_CAMERA), true)
 ifeq ($(call is-board-platform-in-list, $(TARGET_BOARD_PLATFORM)),true)
 
 # Make target to specify building the camera.ko from within Android build system.
@@ -57,3 +58,4 @@ include $(DLKM_DIR)/Build_external_kernelmodule.mk
 endif
 
 endif # End of check for board platform
+endif # BOARD_USES_LEGACY_CAMERA

@@ -131,6 +131,16 @@ static int dp_altmode_notify(void *priv, void *data, size_t len)
 	hpd_state = (dp_data & ALTMODE_HPD_STATE_MASK) >> 6;
 	hpd_irq = (dp_data & ALTMODE_HPD_IRQ_MASK) >> 7;
 
+	// Motorola, zhanggb, 12/02/2022, IKSWT-49412
+	// Scene: Continous hdp_high=0 then hdp_high=1, aux may switch off by mistake
+	// Workaround: Ignore subsequent hpd_high=0 if already connected
+	if (altmode->connected && !altmode->dp_altmode.base.hpd_high) {
+		if (!!hpd_state == false && !!hpd_irq == 0) {
+			DP_INFO("Dup hpd low notified during connected, ignore it!\n");
+			goto ack;
+		}
+	}
+
 	altmode->dp_altmode.base.hpd_high = !!hpd_state;
 	altmode->dp_altmode.base.hpd_irq = !!hpd_irq;
 	altmode->dp_altmode.base.multi_func = force_multi_func ? true :

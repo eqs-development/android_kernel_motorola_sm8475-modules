@@ -8593,6 +8593,7 @@ error:
 	return rc;
 }
 
+
 int dsi_display_set_mode(struct dsi_display *display,
 			 struct dsi_display_mode *mode,
 			 u32 flags)
@@ -8639,10 +8640,15 @@ int dsi_display_set_mode(struct dsi_display *display,
 		goto error;
 	}
 
-	DSI_INFO("mdp_transfer_time=%d, hactive=%d, vactive=%d, fps=%d(actual=%d, group=0x%x), clk_rate=%llu\n",
+	if(display->panel->refresh_rate_base > 0){
+		mot_swtich_base(display, timing.refresh_rate);
+	}
+
+	DSI_INFO("mdp_transfer_time=%d, hactive=%d, vactive=%d, fps=%d(actual=%d, group=0x%x,base=0x%x), clk_rate=%llu\n",
 			adj_mode.priv_info->mdp_transfer_time_us,
 			timing.h_active, timing.v_active, timing.refresh_rate,
 			dsi_display_mode_actual_rr(&timing), timing.refresh_rate_group_flag,
+			display->panel->refresh_rate_base,
 			adj_mode.priv_info->clk_rate_hz);
 	SDE_EVT32(adj_mode.priv_info->mdp_transfer_time_us,
 			timing.h_active, timing.v_active, timing.refresh_rate,

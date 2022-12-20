@@ -76,6 +76,7 @@ static inline u32 dsi_display_mode_actual_rr(struct dsi_mode_info *timing)
 	else
 		return timing->refresh_rate;
 }
+void mot_swtich_base(struct dsi_display *display, u32 refresh_rate);
 // END Motorola zhanggb, IKSWT-18219
 
 #endif /* _DSI_DISPLAY_MOT_EXT_H_ */

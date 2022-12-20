@@ -1579,3 +1579,20 @@ int dsi_display_read_8s(struct dsi_display *display)
 
 	return 0;
 }
+void mot_swtich_base(struct dsi_display *display, u32 refresh_rate)
+{
+	if(refresh_rate == 90){
+		display->panel->refresh_rate_base = RRGSFlag_90HzBased;
+		display->panel->switch_rate_base = false;
+		pr_info("Enter refresh_rate_group = RRGSFlag_90HzBased\n");
+	}else if(refresh_rate ==30 || refresh_rate ==10 || refresh_rate == 1){
+		display->panel->switch_rate_base = true;
+		pr_info("30hz/10hz/1hz base no change.\n");
+	}
+	else{
+		display->panel->refresh_rate_base = RRGSFlag_120HzBased;
+		display->panel->switch_rate_base = false;
+		pr_info("Enter refresh_rate_group = RRGSFlag_120HzBased\n");
+	}
+
+}

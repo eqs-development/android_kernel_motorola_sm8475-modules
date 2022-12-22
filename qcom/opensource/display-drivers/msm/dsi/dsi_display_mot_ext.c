@@ -67,6 +67,8 @@ static int g_pressure_test_en = 0;
 
 static int g_param_id_flag = 0;  //Decimal:  PanelParmId=g_param_id_flag/100   DisplaModeCmdId=g_param_id_flag%100
 
+static int g_is_gsi_mode = 0;
+
 extern const char *cmd_set_prop_map[DSI_CMD_SET_MAX];
 
 static enum alarmtimer_restart dsi_display_wakeup_timer_func(struct alarm *alarm, ktime_t now)
@@ -1405,6 +1407,29 @@ static ssize_t dsi_display_config_cud_put(struct device *dev,
 	return count;
 }
 
+static ssize_t dsi_display_is_gsi_mode_get(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int rc = 1;
+	rc = snprintf(buf, PAGE_SIZE, "g_is_gsi_mode: %d\n",   g_is_gsi_mode);
+	pr_info("g_is_gsi_mode:%d\n", g_is_gsi_mode);
+	return rc;
+}
+
+static ssize_t dsi_display_is_gsi_mode_put(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	if (!dev || !buf) {
+		pr_err("%s: Invalid input: dev(%s), buf(%s)\n", __func__, dev? "valid" : "null", buf? "valid" : "null");
+		return count;
+	}
+
+	if (kstrtou32(buf, 10, &g_is_gsi_mode) < 0)
+		return count;
+	pr_info("%s: g_is_gsi_mode:%d\n", __func__, g_is_gsi_mode);
+
+	return count;
+}
 
 ///sys/devices/platform/soc/soc:qcom,dsi-display/
 static DEVICE_ATTR(dsi_display_wakeup, 0644,
@@ -1423,6 +1448,9 @@ static DEVICE_ATTR(panel_para_by_id, 0664,
 static DEVICE_ATTR(panel_config_cud, 0664,
 			dsi_display_config_cud_get,
 			dsi_display_config_cud_put);
+static DEVICE_ATTR(is_gsi_mode, 0664,
+			dsi_display_is_gsi_mode_get,
+			dsi_display_is_gsi_mode_put);
 
 static const struct attribute *dsi_display_mot_ext_fs_attrs[] = {
 	&dev_attr_dsi_display_wakeup.attr,
@@ -1430,6 +1458,7 @@ static const struct attribute *dsi_display_mot_ext_fs_attrs[] = {
 	&dev_attr_panel_parse_para.attr,
 	&dev_attr_panel_para_by_id.attr,
 	&dev_attr_panel_config_cud.attr,
+	&dev_attr_is_gsi_mode.attr,
 	NULL,
 };
 

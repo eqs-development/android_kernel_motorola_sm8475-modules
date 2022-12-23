@@ -1407,6 +1407,11 @@ static ssize_t dsi_display_config_cud_put(struct device *dev,
 	return count;
 }
 
+bool dsi_panel_is_gsi_mode(void)
+{
+	return g_is_gsi_mode;
+}
+
 static ssize_t dsi_display_is_gsi_mode_get(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {

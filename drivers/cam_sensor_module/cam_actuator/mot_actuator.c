@@ -54,6 +54,7 @@ typedef enum {
 typedef enum {
 	MOT_DEVICE_ONELI,
 	MOT_DEVICE_EQS,
+	MOT_DEVICE_ZEEKR,
 	MOT_DEVICE_NUM,
 } mot_dev_type;
 
@@ -196,6 +197,32 @@ static const mot_dev_info mot_dev_list[MOT_DEVICE_NUM] = {
 				.regulator_volt_uv = {3104000, 1800000},
 				.park_lens_needed = false,
 				.poweron_delay = 6,//ms
+			},
+		},
+	},
+	{
+		.dev_type = MOT_DEVICE_ZEEKR,
+		.actuator_num = 1,
+		.dev_name = "zeekr",
+		.actuator_info = {
+			[0] = {
+				.actuator_type = MOT_ACTUATOR_DW9800,
+				.dac_pos = 0x0,
+				.init_pos = 512,
+				.cci_addr = 0x0c,
+				.cci_dev = 0x01,
+				.cci_master = 0x01,
+				.regulator_list = {"ldo7", "ldo4"},
+				.regulator_volt_uv = {1800000, 2800000},
+				.park_lens_needed = false,
+				.launch_lens = {
+						.launch_lens_needed = true,
+						.launch_lens_step = {
+								{200, 100},
+								{100, 60},
+								{50, 30},
+						},
+				},
 			},
 		},
 	},

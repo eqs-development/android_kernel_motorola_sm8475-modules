@@ -10,6 +10,9 @@
 #include "cam_debug_util.h"
 #include "camera_main.h"
 
+extern int aw86006_ois_init(struct cam_ois_ctrl_t *o_ctrl); /* awinic add */
+extern int aw86006_ois_exit(struct cam_ois_ctrl_t *o_ctrl); /* awinic add */
+
 #ifdef CONFIG_MOT_DONGWOON_OIS_AF_DRIFT
 static struct cam_ois_ctrl_t * g_o_ctrl = NULL;
 
@@ -618,6 +621,9 @@ static int cam_ois_component_bind(struct device *dev,
 	}
 #endif
 
+	if (o_ctrl->ic_name != NULL && strstr(o_ctrl->ic_name, "aw86006"))
+		aw86006_ois_init(o_ctrl);
+
 	CAM_DBG(CAM_OIS, "Component bound successfully");
 	return rc;
 unreg_subdev:
@@ -648,6 +654,9 @@ static void cam_ois_component_unbind(struct device *dev,
 	}
 
 	CAM_INFO(CAM_OIS, "platform driver remove invoked");
+	if (o_ctrl->ic_name != NULL && strstr(o_ctrl->ic_name, "aw86006"))
+		aw86006_ois_exit(o_ctrl);
+
 	soc_info = &o_ctrl->soc_info;
 	for (i = 0; i < soc_info->num_clk; i++)
 		devm_clk_put(soc_info->dev, soc_info->clk[i]);

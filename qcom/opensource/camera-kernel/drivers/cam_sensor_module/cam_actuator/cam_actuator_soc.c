@@ -33,7 +33,16 @@ int32_t cam_actuator_parse_dt(struct cam_actuator_ctrl_t *a_ctrl,
 	}
 
 	of_node = soc_info->dev->of_node;
-	
+
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+	if (!of_property_read_bool(of_node, "multi-user-support")) {
+		a_ctrl->is_multi_user_supported = false;
+	} else {
+		a_ctrl->is_multi_user_supported = true;
+	}
+	CAM_DBG(CAM_ACTUATOR, "multi-user-support %d", a_ctrl->is_multi_user_supported);
+#endif
+
 #ifdef CONFIG_MOT_DONGWOON_OIS_AF_DRIFT
 	if (!of_property_read_bool(of_node, "af-drift-support")) {
 		a_ctrl->af_drift_supported = false;

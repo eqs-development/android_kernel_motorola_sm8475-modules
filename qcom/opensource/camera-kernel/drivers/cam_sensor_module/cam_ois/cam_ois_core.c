@@ -24,6 +24,7 @@ extern void dw9781_post_firmware_download(struct camera_io_master * io_master_in
 extern int dw9784_check_fw_download(struct camera_io_master * io_master_info, const uint8_t *fwData, uint32_t fwSize);
 extern void dw9784_post_firmware_download(struct camera_io_master * io_master_info);
 extern int dw9784_check_if_download(struct camera_io_master * io_master_info);
+extern int aw86006_firmware_update(struct cam_ois_ctrl_t *o_ctrl, const struct firmware *fw);
 
 #ifdef CONFIG_MOT_DONGWOON_OIS_AF_DRIFT
 int m_ois_init = 0;
@@ -449,13 +450,20 @@ static int cam_ois_fw_prog_download(struct cam_ois_ctrl_t *o_ctrl)
 			return 0;
 		}
 		CAM_INFO(CAM_OIS, "Firmware download started.");
-	} else if (strstr(o_ctrl->ois_name, "dw9784")) {
+	}
+	else if (strstr(o_ctrl->ois_name, "dw9784")) {
 		if (!dw9784_check_fw_download(&(o_ctrl->io_master_info), fw->data, fw->size)) {
 			CAM_INFO(CAM_OIS, "Skip firmware download.");
 			release_firmware(fw);
 			return 0;
 		}
 		CAM_INFO(CAM_OIS, "Firmware download started.");
+	}
+	else if (strstr(o_ctrl->ois_name, "aw86006")) {
+		mutex_lock(&o_ctrl->aw_ois_mutex);
+		rc = aw86006_firmware_update(o_ctrl, fw);
+		mutex_unlock(&o_ctrl->aw_ois_mutex);
+		return rc;
 	}
 
 	total_bytes = fw->size;
@@ -578,8 +586,8 @@ static int cam_ois_fw_coeff_download(struct cam_ois_ctrl_t *o_ctrl)
 		return -EINVAL;
 	}
 
-	if (strstr(o_ctrl->ois_name, "dw9781") || strstr(o_ctrl->ois_name, "dw9784")) {
-		CAM_DBG(CAM_OIS, "not need download coeff fw!");
+	if (strstr(o_ctrl->ois_name, "dw9781") || strstr(o_ctrl->ois_name, "dw9784") || strstr(o_ctrl->ois_name, "aw86006")) {
+		CAM_DBG(CAM_OIS, "not need download coeff fw for %s.", o_ctrl->ois_name);
 		return 0;
 	}
 

@@ -448,6 +448,7 @@ struct dsi_panel {
 	int paramVersion;
 	int backlight_map_type;
 	bool delect_dc_onoff;
+	bool hbm_detect_fps;
 	bool dc_on;
 	bool mot_nt37701A_read_cellid;
 	bool esd_first_check;

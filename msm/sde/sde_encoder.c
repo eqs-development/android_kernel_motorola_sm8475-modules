@@ -2588,7 +2588,7 @@ static void sde_encoder_virt_mode_set(struct drm_encoder *drm_enc,
 	int i = 0, ret;
 	int num_lm, num_intf, num_pp_per_intf;
 
-	if (!drm_enc) {
+	if (!drm_enc || !drm_enc->crtc) {
 		SDE_ERROR("invalid encoder\n");
 		return;
 	}

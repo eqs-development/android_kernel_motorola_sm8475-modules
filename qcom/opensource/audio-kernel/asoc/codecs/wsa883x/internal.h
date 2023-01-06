@@ -129,6 +129,7 @@ struct wsa883x_priv {
 	struct snd_soc_component_driver *driver;
 
 	struct delayed_work recovery_work;
+	bool wsa_recovery;
 	bool need_recovery;
 	bool playing;
 };

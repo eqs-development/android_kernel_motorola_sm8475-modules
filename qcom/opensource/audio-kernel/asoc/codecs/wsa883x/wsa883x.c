@@ -546,12 +546,12 @@ static irqreturn_t wsa883x_ocp_handle_irq(int irq, void *data)
 		return IRQ_NONE;
 	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
-
-	mutex_lock(&wsa883x->recovery_lock);
-	wsa883x->need_recovery = true;
-	mutex_unlock(&wsa883x->recovery_lock);
-
-	schedule_delayed_work(&wsa883x->recovery_work, 0);
+	if (wsa883x->wsa_recovery) {
+		mutex_lock(&wsa883x->recovery_lock);
+		wsa883x->need_recovery = true;
+		mutex_unlock(&wsa883x->recovery_lock);
+		schedule_delayed_work(&wsa883x->recovery_work, 0);
+	}
 	return IRQ_HANDLED;
 }
 
@@ -575,12 +575,13 @@ static irqreturn_t wsa883x_pdm_wd_handle_irq(int irq, void *data)
 		return IRQ_NONE;
 	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
+	if (wsa883x->wsa_recovery) {
+		mutex_lock(&wsa883x->recovery_lock);
+		wsa883x->need_recovery = true;
+		mutex_unlock(&wsa883x->recovery_lock);
 
-	mutex_lock(&wsa883x->recovery_lock);
-	wsa883x->need_recovery = true;
-	mutex_unlock(&wsa883x->recovery_lock);
-
-	schedule_delayed_work(&wsa883x->recovery_work, 0);
+		schedule_delayed_work(&wsa883x->recovery_work, 0);
+	}
 	return IRQ_HANDLED;
 }
 
@@ -593,12 +594,13 @@ static irqreturn_t wsa883x_clk_wd_handle_irq(int irq, void *data)
 		return IRQ_NONE;
 	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
+	if (wsa883x->wsa_recovery) {
+		mutex_lock(&wsa883x->recovery_lock);
+		wsa883x->need_recovery = true;
+		mutex_unlock(&wsa883x->recovery_lock);
 
-	mutex_lock(&wsa883x->recovery_lock);
-	wsa883x->need_recovery = true;
-	mutex_unlock(&wsa883x->recovery_lock);
-
-	schedule_delayed_work(&wsa883x->recovery_work, 0);
+		schedule_delayed_work(&wsa883x->recovery_work, 0);
+	}
 	return IRQ_HANDLED;
 }
 
@@ -652,12 +654,13 @@ static irqreturn_t wsa883x_pa_on_err_handle_irq(int irq, void *data)
 				0x10, 0x10);
 	snd_soc_component_update_bits(component, WSA883X_PA_FSM_CTL,
 				0x10, 0x00);
+	if (wsa883x->wsa_recovery) {
+		mutex_lock(&wsa883x->recovery_lock);
+		wsa883x->need_recovery = true;
+		mutex_unlock(&wsa883x->recovery_lock);
 
-	mutex_lock(&wsa883x->recovery_lock);
-	wsa883x->need_recovery = true;
-	mutex_unlock(&wsa883x->recovery_lock);
-
-	schedule_delayed_work(&wsa883x->recovery_work, 0);
+		schedule_delayed_work(&wsa883x->recovery_work, 0);
+	}
 	return IRQ_HANDLED;
 }
 
@@ -2036,6 +2039,8 @@ static int wsa883x_swr_probe(struct swr_device *pdev)
 	struct snd_soc_component *component;
 	char buffer[MAX_NAME_LEN];
 	int dev_index = 0;
+	u32 val = 0;
+
 	struct regmap_irq_chip *wsa883x_sub_regmap_irq_chip = NULL;
 
 	wsa883x = devm_kzalloc(&pdev->dev, sizeof(struct wsa883x_priv),
@@ -2055,6 +2060,10 @@ static int wsa883x_swr_probe(struct swr_device *pdev)
 		ret = -EPROBE_DEFER;
 		goto err;
 	}
+	ret = of_property_read_u32(pdev->dev.of_node,
+				"qcom,wsa-recovery-enabled", &val);
+	wsa883x->wsa_recovery = val;
+	dev_info(&pdev->dev, "%s: wsa-recovery enabled %d\n", __func__, wsa883x->wsa_recovery);
 
 	wsa883x->wsa_rst_np = of_parse_phandle(pdev->dev.of_node,
 					     "qcom,spkr-sd-n-node", 0);

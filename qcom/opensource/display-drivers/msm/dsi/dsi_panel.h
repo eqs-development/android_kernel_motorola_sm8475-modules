@@ -302,6 +302,7 @@ struct dsi_panel {
 	struct dsi_panel_ops panel_ops;
 
 	struct dsi_panel_lhbm_config lhbm_config;
+	bool fod_hbm_enabled;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)

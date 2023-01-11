@@ -457,6 +457,7 @@ struct dsi_panel {
 	bool panel_send_cmd;
 	bool nt37705_dc_detect_fps;
 	bool rm690a0_backlight_config;
+	bool fod_hbm_enabled;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)

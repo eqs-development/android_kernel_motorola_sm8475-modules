@@ -1419,7 +1419,8 @@ static int dp_display_init_aux_switch(struct dp_display_private *dp)
 	 * If we do not define AUX switch control gpio, then we will regard using
 	 * FSA4480 or the same chips.
 	*/
-	if (!gpio_is_valid(dp->aux->dp_aux_switch_flip_gpio)) {
+	if (!gpio_is_valid(dp->aux->dp_aux_switch_flip_gpio) &&
+		!gpio_is_valid(dp->aux->dp_aux_switch_enable_gpio)) {
 	nb.notifier_call = dp_display_fsa4480_callback;
 	nb.priority = 0;
 
@@ -2123,13 +2124,11 @@ static int dp_init_sub_modules(struct dp_display_private *dp)
 		}
 	}
 	if (gpio_is_valid(dp->aux->dp_aux_switch_flip_gpio)) {
-		if (gpio_is_valid(dp->aux->dp_aux_switch_enable_gpio))
-			gpio_direction_output(dp->aux->dp_aux_switch_enable_gpio, 1);
 		gpio_direction_output(dp->aux->dp_aux_switch_flip_gpio, 0);
-	} else {
-		if (gpio_is_valid(dp->aux->dp_aux_switch_enable_gpio))
-			devm_gpio_free(dev, dp->aux->dp_aux_switch_enable_gpio);
-		dp->aux->dp_aux_switch_enable_gpio = -EINVAL;
+	}
+
+	if (gpio_is_valid(dp->aux->dp_aux_switch_enable_gpio)) {
+		gpio_direction_output(dp->aux->dp_aux_switch_enable_gpio, 1);
 	}
 
 	rc = dp->aux->drm_aux_register(dp->aux);

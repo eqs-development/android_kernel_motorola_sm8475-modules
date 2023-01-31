@@ -465,6 +465,7 @@ struct dsi_panel {
 	bool rm690a0_backlight_config;
 	bool check_pcd;
 	int panelPcdCheck_enable;
+	bool hbm_enabled;
 	bool fod_hbm_enabled;
 };
 

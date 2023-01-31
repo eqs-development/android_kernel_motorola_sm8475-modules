@@ -398,6 +398,7 @@ struct dsi_panel {
 	struct msm_param_info curDCModeParaInfo;
 	bool panel_send_cmd;
 	bool nt37705_dc_detect_fps;
+	bool hbm_enabled;
 	bool fod_hbm_enabled;
 };
 

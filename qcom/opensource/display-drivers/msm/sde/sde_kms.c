@@ -1009,6 +1009,9 @@ static void _sde_kms_drm_check_dpms(struct drm_atomic_state *old_state,
 				PANEL_EVENT_NOTIFICATION_PRIMARY :
 				PANEL_EVENT_NOTIFICATION_SECONDARY;
 
+			if(panel_type != PANEL_EVENT_NOTIFICATION_PRIMARY)
+				continue;
+
 			notification.notif_type = new_mode;
 			notification.panel = c_conn->panel;
 			notification.notif_data.old_fps = old_fps;

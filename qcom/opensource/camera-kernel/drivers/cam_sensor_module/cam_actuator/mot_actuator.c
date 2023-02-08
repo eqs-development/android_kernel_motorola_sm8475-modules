@@ -218,9 +218,10 @@ static const mot_dev_info mot_dev_list[MOT_DEVICE_NUM] = {
 				.launch_lens = {
 						.launch_lens_needed = true,
 						.launch_lens_step = {
-								{200, 100},
-								{100, 60},
-								{50, 30},
+								{500, 112},
+								{220, 60},
+								{120, 40},
+								{40, 20},
 						},
 				},
 			},

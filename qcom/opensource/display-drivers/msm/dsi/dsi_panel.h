@@ -454,6 +454,7 @@ struct dsi_panel {
 	bool esd_first_check;
 	int dc_state;
 	struct msm_param_info curDCModeParaInfo;
+	bool panel_send_cmd;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)

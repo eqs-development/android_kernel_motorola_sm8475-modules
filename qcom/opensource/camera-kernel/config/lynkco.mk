@@ -15,3 +15,4 @@ CONFIG_AF_NOISE_ELIMINATION := y
 # Flags to pass into C preprocessor
 ccflags-y += -DCONFIG_CAM_SENSOR_PROBE_DEBUG=1
 ccflags-y += -DCONFIG_AF_NOISE_ELIMINATION=1
+ccflags-y += -DCONFIG_AW86006_OIS_VSYNC=1

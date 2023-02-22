@@ -138,7 +138,7 @@ static int cam_ois_power_up(struct cam_ois_ctrl_t *o_ctrl)
 	soc_private =
 		(struct cam_ois_soc_private *)o_ctrl->soc_info.soc_private;
 
-#ifdef CONFIG_DONGWOON_OIS_VSYNC
+#if (defined(CONFIG_DONGWOON_OIS_VSYNC) || defined(CONFIG_AW86006_OIS_VSYNC))
 	o_ctrl->prev_timestamp = 0;
 	o_ctrl->curr_timestamp = 0;
 	o_ctrl->is_first_vsync = 1;
@@ -330,6 +330,14 @@ static int cam_ois_apply_settings(struct cam_ois_ctrl_t *o_ctrl,
 					o_ctrl->is_video_mode = true;
 				else if (i2c_list->i2c_settings.reg_setting[0].reg_addr == 0x7013 &&
 					i2c_list->i2c_settings.reg_setting[0].reg_data == 0x8000) /*0x7013=0x8000 means still mode*/
+					o_ctrl->is_video_mode = false;
+			}
+#elif defined(CONFIG_AW86006_OIS_VSYNC)
+			if (strstr(o_ctrl->ois_name, "aw86006")) {
+				if (i2c_list->i2c_settings.reg_setting[0].reg_addr == AW86006_PACKET_ENABLE &&
+					i2c_list->i2c_settings.reg_setting[0].reg_data == 0x01)
+					o_ctrl->is_video_mode = true;
+				else
 					o_ctrl->is_video_mode = false;
 			}
 #endif
@@ -1045,7 +1053,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			return rc;
 		}
 
-#ifdef CONFIG_DONGWOON_OIS_VSYNC
+#if (defined(CONFIG_DONGWOON_OIS_VSYNC) || defined(CONFIG_AW86006_OIS_VSYNC))
 		o_ctrl->is_need_eis_data  = false;
 #endif
 
@@ -1164,6 +1172,18 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 		struct i2c_settings_list *i2c_list;
 #endif
 
+#ifdef CONFIG_AW86006_OIS_VSYNC
+		struct cam_buf_io_cfg *timestamp_io_cfg;
+		uintptr_t buf_addr = 0x0;
+		size_t buf_size = 0;
+		uint8_t *timestampBuf;
+		uint32_t timestampBufLen;
+		struct i2c_settings_list *i2c_list;
+		uint8_t *read_buff = NULL;
+		uint32_t buff_length = 0;
+		uint32_t read_length = 0;
+		unsigned long rem_jiffies = 0;
+#endif
 		if (o_ctrl->cam_ois_state < CAM_OIS_CONFIG) {
 			rc = -EINVAL;
 			CAM_WARN(CAM_OIS,
@@ -1178,7 +1198,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			rc = -EINVAL;
 			return rc;
 		}
-#ifdef CONFIG_DONGWOON_OIS_VSYNC
+#if (defined(CONFIG_DONGWOON_OIS_VSYNC) || defined(CONFIG_AW86006_OIS_VSYNC))
 		o_ctrl->is_need_eis_data  = true;
 #endif
 		INIT_LIST_HEAD(&(i2c_read_settings.list_head));
@@ -1265,6 +1285,72 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 				mutex_unlock(&(o_ctrl->vsync_mutex));
 			}
 		}
+#elif defined(CONFIG_AW86006_OIS_VSYNC)
+		timestamp_io_cfg = &io_cfg[1];
+
+		if (timestamp_io_cfg == NULL) {
+			CAM_ERR(CAM_OIS, "timestamp I/O config is invalid(NULL)");
+			rc = -EINVAL;
+			return rc;
+		}
+
+		list_for_each_entry(i2c_list,
+					&(i2c_read_settings.list_head), list) {
+					if (i2c_list->op_code == CAM_SENSOR_I2C_READ_SEQ) {
+						read_buff     = i2c_list->i2c_settings.read_buff;
+						buff_length   = i2c_list->i2c_settings.read_buff_len;
+						read_length   = i2c_list->i2c_settings.size;
+
+						CAM_DBG(CAM_OIS, "buff_length = %d, read_length = %d", buff_length, read_length);
+
+						if (read_length > buff_length || buff_length < RING_BUFFER_LEN) {
+							CAM_ERR(CAM_SENSOR,
+							"Invalid buffer size, readLen: %d, bufLen: %d",
+							read_length, buff_length);
+							delete_request(&i2c_read_settings);
+							return -EINVAL;
+						}
+
+						rc = cam_mem_get_cpu_buf(timestamp_io_cfg->mem_handle[0],
+								&buf_addr, &buf_size);
+						timestampBuf    = (uint8_t *)buf_addr + timestamp_io_cfg->offsets[0];
+						timestampBufLen = buf_size - timestamp_io_cfg->offsets[0];
+
+						if(timestampBufLen < sizeof(uint64_t)) {
+							CAM_ERR(CAM_OIS, "Buffer not large enough for timestamp");
+							delete_request(&i2c_read_settings);
+							return -EINVAL;
+						}
+
+						rem_jiffies = wait_for_completion_timeout(&o_ctrl->vsync_completion,
+												msecs_to_jiffies(120));
+						if (rem_jiffies == 0) {
+							CAM_ERR(CAM_OIS, "Wait ois data completion timeout 120 ms");
+							delete_request(&i2c_read_settings);
+							return -ETIMEDOUT;
+						}
+
+						mutex_lock(&(o_ctrl->vsync_mutex));
+						// ois vsync SOF qtime timestamp
+						qtime_ns = o_ctrl->prev_timestamp;
+
+						memcpy((void *)timestampBuf, (void *)&o_ctrl->prev_timestamp, sizeof(uint64_t));
+
+						// copy ois vsync data to hal buff
+						if (o_ctrl->ois_data_size <= buff_length)
+							memcpy((void *)read_buff, (void *)o_ctrl->ois_data, o_ctrl->ois_data_size);
+						else
+							memcpy((void *)read_buff, (void *)o_ctrl->ois_data, buff_length);
+
+						mutex_unlock(&(o_ctrl->vsync_mutex));
+					}
+				}
+				rc = delete_request(&i2c_read_settings);
+				if (rc < 0) {
+					CAM_ERR(CAM_OIS,
+					"Failed in deleting the read settings");
+					return rc;
+				}
 #else
 		rc = cam_sensor_util_get_current_qtimer_ns(&qtime_ns);
 		if (rc < 0) {
@@ -1554,7 +1640,7 @@ int cam_ois_driver_cmd(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			"Not in right state for stop : %d",
 			o_ctrl->cam_ois_state);
 		}
-#ifdef CONFIG_DONGWOON_OIS_VSYNC
+#if (defined(CONFIG_DONGWOON_OIS_VSYNC) || defined(CONFIG_AW86006_OIS_VSYNC))
 		o_ctrl->is_first_vsync = 1;
 #endif
 

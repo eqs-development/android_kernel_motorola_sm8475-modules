@@ -34,7 +34,7 @@ static int cam_ois_get_dt_data(struct cam_ois_ctrl_t *o_ctrl)
 			o_ctrl->ois_device_type);
 		return -EINVAL;
 	}
-#ifdef CONFIG_DONGWOON_OIS_VSYNC
+#if (defined(CONFIG_DONGWOON_OIS_VSYNC) || defined(CONFIG_AW86006_OIS_VSYNC))
   	if (!of_property_read_bool(of_node, "vsync-irq-support")) {
   		o_ctrl->is_ois_vsync_irq_supported = false;
   	} else {

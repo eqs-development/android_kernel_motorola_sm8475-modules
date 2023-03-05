@@ -1170,13 +1170,12 @@ static int wsa883x_enable_swr_dac_port(struct snd_soc_dapm_widget *w,
 			ch_rate[num_port] = SWR_CLK_RATE_4P8MHZ;
 		++num_port;
 
-		if (wsa883x->comp_enable) {
-			wsa883x_set_port(component, SWR_COMP_PORT,
-					&port_id[num_port], &num_ch[num_port],
-					&ch_mask[num_port], &ch_rate[num_port],
-					&port_type[num_port]);
-			++num_port;
-		}
+		wsa883x_set_port(component, SWR_COMP_PORT,
+				&port_id[num_port], &num_ch[num_port],
+				&ch_mask[num_port], &ch_rate[num_port],
+				&port_type[num_port]);
+		++num_port;
+
 		if (wsa883x->visense_enable) {
 			wsa883x_set_port(component, SWR_VISENSE_PORT,
 					&port_id[num_port], &num_ch[num_port],
@@ -1198,13 +1197,12 @@ static int wsa883x_enable_swr_dac_port(struct snd_soc_dapm_widget *w,
 				&port_type[num_port]);
 		++num_port;
 
-		if (wsa883x->comp_enable) {
-			wsa883x_set_port(component, SWR_COMP_PORT,
-					&port_id[num_port], &num_ch[num_port],
-					&ch_mask[num_port], &ch_rate[num_port],
-					&port_type[num_port]);
-			++num_port;
-		}
+		wsa883x_set_port(component, SWR_COMP_PORT,
+				&port_id[num_port], &num_ch[num_port],
+				&ch_mask[num_port], &ch_rate[num_port],
+				&port_type[num_port]);
+		++num_port;
+
 		if (wsa883x->visense_enable) {
 			wsa883x_set_port(component, SWR_VISENSE_PORT,
 					&port_id[num_port], &num_ch[num_port],

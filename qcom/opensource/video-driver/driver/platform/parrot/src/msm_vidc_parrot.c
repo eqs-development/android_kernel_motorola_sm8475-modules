@@ -108,7 +108,7 @@ static struct msm_platform_core_capability core_data_parrot_v1[] = {
 	{MAX_NUM_1080P_SESSIONS, 4},
 	{MAX_NUM_4K_SESSIONS, 2},
 	{MAX_SECURE_SESSION_COUNT, 3},
-	{MAX_RT_MBPF, 40800}, /* ((3840x2176)/256) + (1920x1088)/256 */
+	{MAX_RT_MBPF, 65280}, /* ((3840x2176)/256) * 2 */
 	{MAX_MBPF, 69632}, /* ((4096x2176)/256) x 2  */
 	/* max_load 4096x2176@30fps */
 	{MAX_MBPS, 1224000}, /* Concurrency: UHD@30 decode + 1080p@30 encode */

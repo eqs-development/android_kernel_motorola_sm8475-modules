@@ -2173,9 +2173,6 @@ handle_irq:
 			swr_master_write(swrm,
 				SWRM_CPU1_INTERRUPT_EN,
 				swrm->intr_mask);
-			// MMI_STOPSHIP <AUDIO>: trigger a panic when clush interrupt happen
-			if (swrm->swr_adsp_recovery)
-				panic("trigger panic from swr clsh interrupt");
 			break;
 		case SWRM_INTERRUPT_STATUS_RD_FIFO_OVERFLOW:
 			value = swr_master_read(swrm, SWRM_CMD_FIFO_STATUS);

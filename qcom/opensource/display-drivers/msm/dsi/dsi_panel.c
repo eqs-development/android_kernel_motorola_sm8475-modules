@@ -1231,6 +1231,9 @@ static int dsi_panel_send_param_cmd(struct dsi_panel *panel,
 			rc = -ENODEV;
 			goto end;
 		}
+		if(panel->nt37705_dc_detect_fps && !strcmp(panel_param->param_name, "DC"))
+			update_dc_cmd_nt37705(panel, param_map_state);
+
 		rc = dsi_panel_tx_send_param_cmd(panel, param_map_state);
 		if(rc < 0){
 			DSI_ERR("%s: failed to set %s cmd\n",__func__,panel_param->param_name);
@@ -4960,6 +4963,8 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
 	panel->hbm_detect_fps = of_property_read_bool(of_node,
 				"qcom,mdss-dsi-hbm-detect-fps");
 
+	panel->nt37705_dc_detect_fps = of_property_read_bool(of_node,
+				"qcom,mdss-dsi-nt37705-dc-detect-fps");
 
 	panel->mot_nt37701A_read_cellid = of_property_read_bool(of_node,
 				"qcom,mot_nt37701A_read_cellid");

@@ -455,6 +455,7 @@ struct dsi_panel {
 	int dc_state;
 	struct msm_param_info curDCModeParaInfo;
 	bool panel_send_cmd;
+	bool nt37705_dc_detect_fps;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)

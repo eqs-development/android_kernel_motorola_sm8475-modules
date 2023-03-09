@@ -1828,3 +1828,32 @@ void mot_swtich_base(struct dsi_display *display, u32 refresh_rate)
 	}
 
 }
+void update_dc_cmd_nt37705(struct dsi_panel *panel,
+                        struct panel_param_val_map *param_map_state)
+{
+	u32 i;
+	u32 count;
+	u8 *payload;
+	struct dsi_cmd_desc *cmds;
+
+	if (!param_map_state) {
+		DSI_ERR("Invalid Params\n");
+		return;
+	}
+	count = param_map_state->cmds->count;
+	cmds = param_map_state->cmds->cmds;
+
+	for ( i =0; i < count; i++,cmds++) {
+		payload = (u8 *)cmds->msg.tx_buf;
+		if (payload[0] == 0X6D) {
+			if(panel->cur_mode->timing.refresh_rate == 30 && panel->refresh_rate_base == RRGSFlag_90HzBased) payload[1] = 0x05;
+			else if(panel->cur_mode->timing.refresh_rate == 30)payload[1] = 0x01;
+			else if(panel->cur_mode->timing.refresh_rate == 24)payload[1] = 0x02;
+			else if(panel->cur_mode->timing.refresh_rate == 10)payload[1] = 0x03;
+			else if(panel->cur_mode->timing.refresh_rate == 1)payload[1] = 0x04;
+			else payload[1] = 0x00;
+			pr_debug("%s: payload[0] = 0x%x payload[1] = 0x%x", __func__, payload[0],payload[1]);
+		}
+	}
+}
+

@@ -38,7 +38,7 @@ static ssize_t adsp_boot_store(struct kobject *kobj,
 	struct kobj_attribute *attr,
 	const char *buf, size_t count);
 
-static ssize_t adsp_ssr_store(struct kobject *kobj,
+ssize_t adsp_ssr_store(struct kobject *kobj,
 	struct kobj_attribute *attr,
 	const char *buf, size_t count);
 
@@ -176,7 +176,7 @@ static void adsp_loader_do(struct platform_device *pdev)
 	schedule_work(&adsp_ldr_work);
 }
 
-static ssize_t adsp_ssr_store(struct kobject *kobj,
+ssize_t adsp_ssr_store(struct kobject *kobj,
 	struct kobj_attribute *attr,
 	const char *buf,
 	size_t count)
@@ -210,7 +210,7 @@ static ssize_t adsp_ssr_store(struct kobject *kobj,
 	dev_dbg(&pdev->dev, "%s :: ADSP restarted\n", __func__);
 	return count;
 }
-
+EXPORT_SYMBOL(adsp_ssr_store);
 static ssize_t adsp_boot_store(struct kobject *kobj,
 	struct kobj_attribute *attr,
 	const char *buf,

@@ -2684,7 +2684,6 @@ static int swrm_probe(struct platform_device *pdev)
 	struct clk *lpass_core_hw_vote = NULL;
 	struct clk *lpass_core_audio = NULL;
 	u32 swrm_hw_ver = 0;
-	u32 val = 0;
 
 	/* Allocate soundwire master driver structure */
 	swrm = devm_kzalloc(&pdev->dev, sizeof(struct swr_mstr_ctrl),
@@ -2852,11 +2851,6 @@ static int swrm_probe(struct platform_device *pdev)
 				&swrm->is_always_on);
 	if (ret)
 		dev_dbg(&pdev->dev, "%s: failed to get is_always_on flag\n", __func__);
-
-	ret = of_property_read_u32(pdev->dev.of_node,
-				"qcom,swr-adsp-recovery-enabled", &val);
-	swrm->swr_adsp_recovery = val;
-	dev_info(&pdev->dev, "%s: adsp-recovery enabled %d\n", __func__, swrm->swr_adsp_recovery);
 
 	swrm->reg_irq = pdata->reg_irq;
 	swrm->master.read = swrm_read;

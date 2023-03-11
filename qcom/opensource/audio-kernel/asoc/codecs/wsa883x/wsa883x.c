@@ -430,6 +430,10 @@ static ssize_t codec_debug_test_write(struct file *file,
 	mutex_unlock(&wsa883x->recovery_lock);
 	schedule_delayed_work(&wsa883x->recovery_work, 0);
 
+	if (wsa883x->adsp_recovery) {
+		schedule_delayed_work(&wsa883x->adsp_recovery_work, 0);
+	}
+
 	if (rc == 0)
 		rc = cnt;
 	else
@@ -581,6 +585,9 @@ static irqreturn_t wsa883x_pdm_wd_handle_irq(int irq, void *data)
 		mutex_unlock(&wsa883x->recovery_lock);
 
 		schedule_delayed_work(&wsa883x->recovery_work, 0);
+	}
+	if (wsa883x->adsp_recovery) {
+		schedule_delayed_work(&wsa883x->adsp_recovery_work, 0);
 	}
 	return IRQ_HANDLED;
 }
@@ -1533,7 +1540,24 @@ static int wsa883x_get_temperature(struct snd_soc_component *component,
 
 	return ret;
 }
+extern ssize_t adsp_ssr_store(struct kobject *kobj,
+	struct kobj_attribute *attr,
+	const char *buf, size_t count);
 
+static void wsa883x_recovery_adsp_work(struct work_struct *work)
+{
+	struct wsa883x_priv *wsa883x = NULL;
+	struct delayed_work *dwork;
+	struct snd_soc_component *component;
+	const char *buf = "1";
+
+	dwork = to_delayed_work(work);
+	wsa883x = container_of(dwork, struct wsa883x_priv, adsp_recovery_work);
+	component = wsa883x->component;
+
+	dev_info(component->dev, "%s: enter\n", __func__);
+	adsp_ssr_store(NULL, NULL, buf, 0);
+}
 static void wsa883x_recovery_work(struct work_struct *work)
 {
 	struct wsa883x_priv *wsa883x = NULL;
@@ -1801,6 +1825,7 @@ static int wsa883x_codec_probe(struct snd_soc_component *component)
 
 	wsa883x->playing = false;
 	INIT_DELAYED_WORK(&wsa883x->recovery_work, wsa883x_recovery_work);
+	INIT_DELAYED_WORK(&wsa883x->adsp_recovery_work, wsa883x_recovery_adsp_work);
 
 	return 0;
 }
@@ -2062,6 +2087,11 @@ static int wsa883x_swr_probe(struct swr_device *pdev)
 				"qcom,wsa-recovery-enabled", &val);
 	wsa883x->wsa_recovery = val;
 	dev_info(&pdev->dev, "%s: wsa-recovery enabled %d\n", __func__, wsa883x->wsa_recovery);
+
+	ret = of_property_read_u32(pdev->dev.of_node,
+				"qcom,wsa-adsp-recovery-enabled", &val);
+	wsa883x->adsp_recovery = val;
+	dev_info(&pdev->dev, "%s: wsa-adsp-recovery enabled %d\n", __func__, wsa883x->adsp_recovery);
 
 	wsa883x->wsa_rst_np = of_parse_phandle(pdev->dev.of_node,
 					     "qcom,spkr-sd-n-node", 0);

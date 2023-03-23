@@ -1857,3 +1857,64 @@ void update_dc_cmd_nt37705(struct dsi_panel *panel,
 	}
 }
 
+int mot_rm690a0_update_backlight(struct dsi_panel *panel, u32 bl_lvl)
+{
+	int rc = 0;
+	unsigned long mode_flags = 0;
+	struct mipi_dsi_device *dsi = NULL;
+	u32 i;
+	u8 *payload;
+	u32 count;
+	struct dsi_cmd_desc *cmds;
+	struct dsi_display_mode *mode;
+
+	if (!panel || !panel->cur_mode)
+		return -EINVAL;
+
+	mode = panel->cur_mode;
+
+	if (!panel || (bl_lvl > 0xffff)) {
+		DSI_ERR("invalid params\n");
+		return -EINVAL;
+	}
+
+	dsi = &panel->mipi_device;
+	if (unlikely(panel->bl_config.lp_mode)) {
+		mode_flags = dsi->mode_flags;
+		dsi->mode_flags |= MIPI_DSI_MODE_LPM;
+	}
+
+	if(bl_lvl > 255){
+		cmds = mode->priv_info->cmd_sets[DSI_CMD_SET_HBM_BACKLIGHT].cmds;
+		count = mode->priv_info->cmd_sets[DSI_CMD_SET_HBM_BACKLIGHT].count;
+		for ( i =0; i < count; i++,cmds++) {
+
+			payload = (u8 *)cmds->msg.tx_buf;
+			if (payload[0] == 0X63) {
+				payload[1] = bl_lvl - 70;
+			       pr_info("%s: drm hbm bl_lvl=%d payload[0] = 0x%x payload[1] = 0x%x",
+				      __func__, bl_lvl,payload[0],payload[1]);
+			}
+		}
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_HBM_BACKLIGHT);
+	}
+	else{
+		cmds = mode->priv_info->cmd_sets[DSI_CMD_SET_NORMAL_BACKLIGHT].cmds;
+		count = mode->priv_info->cmd_sets[DSI_CMD_SET_NORMAL_BACKLIGHT].count;
+
+		for ( i =0; i < count; i++,cmds++) {
+			payload = (u8 *)cmds->msg.tx_buf;
+
+			if (payload[0] == 0X51) {
+				payload[1] = bl_lvl;
+			}
+		}
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NORMAL_BACKLIGHT);
+
+	}
+
+	if (unlikely(panel->bl_config.lp_mode))
+		dsi->mode_flags = mode_flags;
+
+	return rc;
+}

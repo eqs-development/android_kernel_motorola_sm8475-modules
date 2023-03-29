@@ -66,6 +66,8 @@ else ifneq (,$(filter felix felix_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/felix.mk
 else ifneq (,$(filter zeekr, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/zeekr.mk
+else ifneq (,$(filter zeekr_cn, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/zeekr.mk
 else ifneq (,$(filter zeekr_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/zeekr_factory.mk
 else ifneq (,$(filter lynkco, $(TARGET_PRODUCT)))

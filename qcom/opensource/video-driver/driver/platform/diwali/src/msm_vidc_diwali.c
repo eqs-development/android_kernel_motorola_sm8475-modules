@@ -4251,9 +4251,12 @@ static struct msm_platform_inst_capability instance_data_diwali_v2[] = {
 		{0},
 		NULL, msm_vidc_set_u32_enum},
 
+	// BEGIN Motorola yangzy19 IKSWT-112461:Increase the level range of the Venus.H264.DEC.
+	// The solution is to cherry pick some configuration of V0 into V2.
+	// V2 changed from V4L2_MPEG_VIDEO_H264_LEVEL_5_2 to V4L2_MPEG_VIDEO_H264_LEVEL_6_0.
 	{LEVEL, DEC, H264,
 		V4L2_MPEG_VIDEO_H264_LEVEL_1_0,
-		V4L2_MPEG_VIDEO_H264_LEVEL_5_2,
+		V4L2_MPEG_VIDEO_H264_LEVEL_6_0,
 		BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1_0) |
 		BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1B) |
 		BIT(V4L2_MPEG_VIDEO_H264_LEVEL_1_1) |
@@ -4270,14 +4273,16 @@ static struct msm_platform_inst_capability instance_data_diwali_v2[] = {
 		BIT(V4L2_MPEG_VIDEO_H264_LEVEL_4_2) |
 		BIT(V4L2_MPEG_VIDEO_H264_LEVEL_5_0) |
 		BIT(V4L2_MPEG_VIDEO_H264_LEVEL_5_1) |
-		BIT(V4L2_MPEG_VIDEO_H264_LEVEL_5_2),
-		V4L2_MPEG_VIDEO_H264_LEVEL_5_2,
+		BIT(V4L2_MPEG_VIDEO_H264_LEVEL_5_2) |
+		BIT(V4L2_MPEG_VIDEO_H264_LEVEL_6_0),
+		V4L2_MPEG_VIDEO_H264_LEVEL_6_0,
 		V4L2_CID_MPEG_VIDEO_H264_LEVEL,
 		HFI_PROP_LEVEL,
 		CAP_FLAG_ROOT | CAP_FLAG_OUTPUT_PORT | CAP_FLAG_MENU,
 		{0},
 		{0},
 		NULL, msm_vidc_set_u32_enum},
+	// END IKSWT-112461
 
 	{LEVEL, ENC, H264,
 		V4L2_MPEG_VIDEO_H264_LEVEL_1_0,

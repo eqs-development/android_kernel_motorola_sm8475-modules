@@ -963,6 +963,10 @@ int cam_sensor_match_sub_device_id(struct cam_sensor_ctrl_t *s_ctrl)
 	int rc = 0;
 	uint32_t sub_device_id = 0;
 	uint16_t sensor_address = 0;
+#ifdef CONFIG_CAM_SENSOR_PROBE_DEBUG
+	int retries = 5;
+	bool readSuccess = false;
+#endif
 
 	/* if hal doesn't config ProbeSubDevice parameter in sensor xml, return success immediately */
 	if (!s_ctrl->probe_sub_device) {
@@ -977,6 +981,38 @@ int cam_sensor_match_sub_device_id(struct cam_sensor_ctrl_t *s_ctrl)
 		s_ctrl->io_master_info.cci_client->sid = s_ctrl->sub_device_addr >> 1;
 	}
 
+#ifdef CONFIG_CAM_SENSOR_PROBE_DEBUG
+	while (retries-- && !readSuccess) {
+		rc = camera_io_dev_read(
+			&(s_ctrl->io_master_info),
+			s_ctrl->sub_device_id_addr,
+			&sub_device_id,
+			s_ctrl->sub_device_addr_type,
+			s_ctrl->sub_device_data_type);
+
+		CAM_INFO(CAM_SENSOR, "Read sub device id: 0x%x expected sub device id 0x%x",
+			sub_device_id, s_ctrl->expected_sub_device_id);
+
+		if (sub_device_id == s_ctrl->expected_sub_device_id) {
+			CAM_INFO(CAM_SENSOR,
+				"Probe sub device success,slot:%d,sub_device_addr:0x%x,sub_device_id:0x%x",
+				s_ctrl->soc_info.index,
+				s_ctrl->sub_device_addr,
+				s_ctrl->expected_sub_device_id);
+			rc = 0;
+			readSuccess = true;
+		} else if (rc) {
+			CAM_ERR(CAM_SENSOR, "read sub device id failed!!! delay and retry!!! rc=%d", rc);
+			readSuccess = false;
+			rc = -EINVAL;
+			usleep_range(1000, 1010);
+		} else {
+			readSuccess = true;
+			rc = -ENODEV;
+			CAM_INFO(CAM_SENSOR, "read sub device id success, but sub device id not matched, skip probe process");
+		}
+	}
+#else
 	rc = camera_io_dev_read(
 		&(s_ctrl->io_master_info),
 		s_ctrl->sub_device_id_addr,
@@ -999,6 +1035,7 @@ int cam_sensor_match_sub_device_id(struct cam_sensor_ctrl_t *s_ctrl)
 		CAM_INFO(CAM_SENSOR, "sub device id not matched, skip probe process");
 		rc = -EINVAL;
 	}
+#endif
 
 	/* restore sensor i2c address */
 	s_ctrl->io_master_info.cci_client->sid = sensor_address;

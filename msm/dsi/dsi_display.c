@@ -6795,6 +6795,53 @@ static ssize_t panelDC_show(struct device *device,
 	    return scnprintf(buf, PAGE_SIZE, "%s\n", "Not a DSI panel");
 }
 
+static ssize_t panelPcdCheck_store(struct device *device,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+
+	int res;
+	int cnt = 10;
+	struct drm_connector *conn;
+	struct sde_connector *sde_conn;
+	struct dsi_display *dsi_display;
+
+	conn = dev_get_drvdata(device);
+	sde_conn = to_sde_connector(conn);
+	dsi_display = sde_conn->display;
+
+	res = kstrtou32(buf, cnt, &dsi_display->panel->panelPcdCheck_enable);
+	if (res < 0)
+		return res;
+	if(dsi_display->panel->bl_config.bl_level > 0 && dsi_display->panel->check_pcd)
+		set_panelpcdcheck_enable(dsi_display->panel);
+
+	printk("%d dsi_display->panel->check_pcd = %d\n", dsi_display->panel->panelPcdCheck_enable,dsi_display->panel->check_pcd);
+	return count;
+
+}
+static ssize_t panelPcdCheck_show(struct device *device,
+	struct device_attribute *attr, char *buf)
+{
+	struct drm_connector *conn;
+	struct sde_connector *sde_conn;
+	struct dsi_display *dsi_display;
+
+	if (!device || !buf) {
+		SDE_ERROR("invalid input param(s)\n");
+		return -EAGAIN;
+	}
+
+	conn = dev_get_drvdata(device);
+	sde_conn = to_sde_connector(conn);
+	dsi_display = sde_conn->display;
+
+	dsi_display->panel->panelPcdCheck_enable = 0;
+
+	if (sde_conn->connector_type == DRM_MODE_CONNECTOR_DSI)
+	    return scnprintf(buf, PAGE_SIZE, "%d\n", dsi_display->panel->panelPcdCheck_enable);
+	else
+	    return scnprintf(buf, PAGE_SIZE, "%s\n", "Not a DSI panel");
+}
 static DEVICE_ATTR_RO(panelId);
 static DEVICE_ATTR_RO(panelVer);
 static DEVICE_ATTR_RO(panelName);
@@ -6803,6 +6850,7 @@ static DEVICE_ATTR_RO(panelSupplier);
 static DEVICE_ATTR_RO(panelBLExponent);
 static DEVICE_ATTR_RO(panelCellId);
 static DEVICE_ATTR_RO(panelDC);
+static DEVICE_ATTR_RW(panelPcdCheck);
 
 static const struct attribute *sde_conn_panel_attrs[] = {
 	&dev_attr_panelId.attr,
@@ -6813,6 +6861,7 @@ static const struct attribute *sde_conn_panel_attrs[] = {
 	&dev_attr_panelBLExponent.attr,
 	&dev_attr_panelCellId.attr,
 	&dev_attr_panelDC.attr,
+	&dev_attr_panelPcdCheck.attr,
 	NULL
 };
 

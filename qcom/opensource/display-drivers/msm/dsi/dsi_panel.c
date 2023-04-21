@@ -674,7 +674,6 @@ int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
 
 		if (type == DSI_CMD_SET_VID_SWITCH_OUT)
 			cmds->msg.flags |= MIPI_DSI_MSG_ASYNC_OVERRIDE;
-
 		len = dsi_host_transfer_sub(panel->host, cmds);
 		if (len < 0) {
 			rc = len;
@@ -2827,6 +2826,8 @@ const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-timing-switch-command-base",
 	"qcom,mdss-dsi-normal-backlight-command",
 	"qcom,mdss-dsi-hbm-backlight-command",
+	"qcom,mdss-dsi-pcd-check-enable-command",
+	"qcom,mdss-dsi-pcd-check-disable-command",
 };
 
 const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
@@ -2879,6 +2880,8 @@ const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-timing-switch-command-base-state",
 	"qcom,mdss-dsi-normal-backlight-command-state",
 	"qcom,mdss-dsi-hbm-backlight-command-state",
+	"qcom,mdss-dsi-pcd-check-enable-command-state",
+	"qcom,mdss-dsi-pcd-check-disable-command-state",
 };
 
 int dsi_panel_get_cmd_pkt_count(const char *data, u32 length, u32 *cnt)
@@ -4990,6 +4993,9 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
             DSI_INFO("got refresh_rate_base %d\n", panel->refresh_rate_base);
         }
 
+	panel->check_pcd = of_property_read_bool(of_node,
+				"qcom,check_pcd");
+
 	return rc;
 }
 
@@ -6814,5 +6820,28 @@ int dsi_panel_tx_cellid_cmd(struct dsi_panel *panel)
 	}
 error:
 	return rc;
+}
+
+void set_panelpcdcheck_enable(struct dsi_panel *panel)
+{
+	int rc = 0;
+
+	if (!panel) {
+		DSI_ERR("Invalid params\n");
+	}
+	mutex_lock(&panel->panel_lock);
+	if(panel->panelPcdCheck_enable > 0){
+		printk("Panel pcd check enable\n");
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_PANEL_PCD_ENABLE);
+	}else{
+		printk("susan Panel pcd check disable\n");
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_PANEL_PCD_DISABLE);
+	}
+	if (rc)
+		DSI_ERR("[%s] failed to send DSI_CMD_SET_PANEL_PCD_DISABLE cmds, rc=%d\n",
+		       panel->name, rc);
+
+	mutex_unlock(&panel->panel_lock);
+
 }
 

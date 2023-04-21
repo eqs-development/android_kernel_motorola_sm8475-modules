@@ -462,6 +462,8 @@ struct dsi_panel {
 	bool panel_send_cmd;
 	bool nt37705_dc_detect_fps;
 	bool rm690a0_backlight_config;
+	bool check_pcd;
+	int panelPcdCheck_enable;
 };
 
 bool dsi_display_all_displays_dead(void);
@@ -618,5 +620,7 @@ int dsi_panel_dfps_send_cmd(struct dsi_panel *panel);
 int dsi_panel_tx_cellid_cmd(struct dsi_panel *panel);
 int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
 				enum dsi_cmd_set_type type);
+void set_panelpcdcheck_enable(struct dsi_panel *panel);
+
 #endif /* _DSI_PANEL_H_ */
 

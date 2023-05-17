@@ -75,8 +75,8 @@ static int ois_block_read_addr8_data8(struct cam_ois_ctrl_t *o_ctrl,
 		return -EINVAL;
 	}
 	temp_freq = o_ctrl->io_master_info.cci_client->i2c_freq_mode;
-	/* Modify i2c freq to 400K */
-	o_ctrl->io_master_info.cci_client->i2c_freq_mode = I2C_FAST_MODE;
+	/* Modify i2c freq to 100K */
+	o_ctrl->io_master_info.cci_client->i2c_freq_mode = I2C_STANDARD_MODE;
 	ret = camera_io_dev_read_seq(&(o_ctrl->io_master_info), addr, data,
 		addr_type, CAMERA_SENSOR_I2C_TYPE_BYTE, num_byte);
 	if (ret < 0)

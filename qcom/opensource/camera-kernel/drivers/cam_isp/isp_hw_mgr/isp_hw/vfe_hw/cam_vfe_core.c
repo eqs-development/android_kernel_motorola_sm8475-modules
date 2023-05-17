@@ -248,6 +248,7 @@ int cam_vfe_reset(void *hw_priv, void *reset_core_args, uint32_t arg_size)
 	top_reset_irq_reg_mask[CAM_IFE_IRQ_CAMIF_REG_STATUS0] =
 				irq_info->reset_mask;
 
+	mutex_lock(&vfe_mutex);
 	irq_info->reset_irq_handle = cam_irq_controller_subscribe_irq(
 		core_info->vfe_irq_controller,
 		CAM_IRQ_PRIORITY_0,
@@ -259,6 +260,7 @@ int cam_vfe_reset(void *hw_priv, void *reset_core_args, uint32_t arg_size)
 	if (irq_info->reset_irq_handle < 1) {
 		CAM_ERR(CAM_ISP, "subscribe irq controller failed");
 		irq_info->reset_irq_handle = 0;
+		mutex_unlock(&vfe_mutex);
 		return -EFAULT;
 	}
 
@@ -285,6 +287,7 @@ int cam_vfe_reset(void *hw_priv, void *reset_core_args, uint32_t arg_size)
 		CAM_ERR(CAM_ISP, "Error. Unsubscribe failed");
 	irq_info->reset_irq_handle = 0;
 
+	mutex_unlock(&vfe_mutex);
 skip_reset:
 	CAM_DBG(CAM_ISP, "Exit");
 	return rc;

@@ -6793,6 +6793,7 @@ int dsi_panel_tx_cellid_cmd(struct dsi_panel *panel)
 		goto error;
 	}
 
+	dsi_panel_acquire_panel_lock(panel);
 	for (i = 0; i < count; i++) {
 		cmds->ctrl_flags = 0;
 
@@ -6819,6 +6820,7 @@ int dsi_panel_tx_cellid_cmd(struct dsi_panel *panel)
 		cmds++;
 	}
 error:
+	dsi_panel_release_panel_lock(panel);
 	return rc;
 }
 

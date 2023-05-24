@@ -128,6 +128,7 @@ struct wsa883x_priv {
 	struct snd_soc_dai_driver *dai_driver;
 	struct snd_soc_component_driver *driver;
 
+	unsigned long irq_enabled;
 	struct delayed_work recovery_work;
 	struct delayed_work adsp_recovery_work;
 	bool wsa_recovery;

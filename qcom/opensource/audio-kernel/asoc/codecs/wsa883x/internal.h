@@ -101,6 +101,7 @@ struct wsa883x_priv {
 	struct snd_info_entry *variant_entry;
 	struct device_node *wsa_rst_np;
 	int pa_mute;
+	int pa_disable;
 	int curr_temp;
 	int variant;
 	int version;

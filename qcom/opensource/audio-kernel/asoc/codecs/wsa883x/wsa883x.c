@@ -1125,6 +1125,36 @@ static int wsa883x_put_ext_vdd_spk(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int wsa883x_get_pa_disable(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component =
+				snd_soc_kcontrol_component(kcontrol);
+	struct wsa883x_priv *wsa883x = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = wsa883x->pa_disable;
+
+	return 0;
+}
+
+static int wsa883x_put_pa_disable(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component =
+				snd_soc_kcontrol_component(kcontrol);
+	struct wsa883x_priv *wsa883x = snd_soc_component_get_drvdata(component);
+	int value = ucontrol->value.integer.value[0];
+
+	dev_dbg(component->dev, "%s: pa disable status %d\n", __func__, value);
+	wsa883x->pa_disable = value;
+	if (wsa883x->pa_disable && test_bit(SPKR_STATUS, &wsa883x->status_mask))
+		snd_soc_component_update_bits(wsa883x->component,
+				WSA883X_PA_FSM_CTL,
+				0x01, 0x00);
+
+	return 0;
+}
+
 static const struct snd_kcontrol_new wsa883x_snd_controls[] = {
 	SOC_ENUM_EXT("WSA PA Gain", wsa_pa_gain_enum,
 		     wsa_pa_gain_get, wsa_pa_gain_put),
@@ -1152,6 +1182,9 @@ static const struct snd_kcontrol_new wsa883x_snd_controls[] = {
 
 	SOC_SINGLE_EXT("External VDD_SPK", SND_SOC_NOPM, 0, 1, 0,
 		wsa883x_get_ext_vdd_spk, wsa883x_put_ext_vdd_spk),
+
+	SOC_SINGLE_EXT("WSA PA Disable", SND_SOC_NOPM, 0, 1, 0,
+		wsa883x_get_pa_disable, wsa883x_put_pa_disable),
 };
 
 static const struct snd_kcontrol_new swr_dac_port[] = {
@@ -1810,6 +1843,7 @@ static int wsa883x_codec_probe(struct snd_soc_component *component)
 	wsa883x->comp_offset = COMP_OFFSET2;
 	wsa883x_codec_init(component);
 	wsa883x->global_pa_cnt = 0;
+	wsa883x->pa_disable = 0;
 
 	memset(w_name, 0, sizeof(w_name));
 	strlcpy(w_name, wsa883x->dai_driver->playback.stream_name,

@@ -549,7 +549,9 @@ static int32_t mot_actuator_power_off(uint32_t index)
 	for (i = 0; i < REGULATOR_NUM; i++) {
 		if (mot_actuator_runtime[index].regulators[i] != NULL) {
 			ret = regulator_disable(mot_actuator_runtime[index].regulators[i]);
-			CAM_DBG(CAM_ACTUATOR, "power off ret %d", ret);
+			if(ret){
+				CAM_ERR(CAM_ACTUATOR, "power off ret %d", ret);
+			}
 		}
 	}
 
@@ -821,9 +823,13 @@ int mot_actuator_on_vibrate_start(void)
 {
 	bool is_exiting = false;
 	ktime_t start,end,duration;
+	int32_t ret = 0;
 	start = ktime_get();
 	__pm_stay_awake(&mot_actuator_fctrl.actuator_wakelock);
-	cancel_delayed_work(&mot_actuator_fctrl.delay_work);
+	ret = cancel_delayed_work(&mot_actuator_fctrl.delay_work);
+	if(!ret) {
+		CAM_WARN(CAM_ACTUATOR, "mot_actuator_delayed_process had already lunched");
+	}
 	if (mutex_is_locked(&mot_actuator_fctrl.actuator_lock)) {
 		is_exiting = true;
 	}
@@ -1130,6 +1136,7 @@ static void mot_actuator_delayed_process(struct work_struct *work)
 		}
 	}
 	mot_actuator_state = MOT_ACTUATOR_RELEASED;
+	CAM_WARN(CAM_ACTUATOR, "release actuator done");
 	mutex_unlock(&actuator_fctrl->actuator_lock);
 	__pm_relax(&actuator_fctrl->actuator_wakelock);
 }
@@ -1159,10 +1166,10 @@ static ssize_t msm_actuator_store(struct device *dev,
 		} else {
 			mot_actuator_scene = MOT_ACTUATOR_VIB;
 		}
-		CAM_DBG(CAM_ACTUATOR, "start actuator, scene: %d", mot_actuator_scene);
+		CAM_WARN(CAM_ACTUATOR, "start actuator, scene: %d", mot_actuator_scene);
 		mot_actuator_on_vibrate_start();
 	} else {
-		CAM_DBG(CAM_ACTUATOR, "stop actuator");
+		CAM_WARN(CAM_ACTUATOR, "stop actuator");
 		mot_actuator_on_vibrate_stop();
 	}
 	retval = count;

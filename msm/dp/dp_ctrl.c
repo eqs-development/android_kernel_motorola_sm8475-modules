@@ -742,8 +742,6 @@ static int dp_ctrl_link_setup(struct dp_ctrl_private *ctrl, bool shallow)
 	if (ctrl->parser->dp_downgrade && link_params->lane_count == 2 && link_params->bw_code == DP_LINK_BW_8_1) {
 		DP_INFO("dp_ctrl_link_setup downgrade to DP1.2\n");
 		link_params->bw_code = DP_LINK_BW_5_4;
-		ctrl->initial_bw_code = DP_LINK_BW_5_4;
-		downgrade = true;
 	}
 
 	while (1) {

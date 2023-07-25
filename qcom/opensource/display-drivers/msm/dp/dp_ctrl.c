@@ -8,6 +8,7 @@
 #include <linux/completion.h>
 #include <linux/delay.h>
 #include <drm/drm_fixed.h>
+#include <linux/usb/dwc3-msm.h>
 
 #include "dp_ctrl.h"
 #include "dp_debug.h"
@@ -723,6 +724,55 @@ end:
 	ctrl->training_2_pattern = pattern;
 }
 
+static int dp_ctrl_set_usb_redriver_eq(struct dp_ctrl_private *ctrl)
+{
+	struct device_node *np;
+	struct device_node *usb_node;
+	struct platform_device *usb_pdev;
+
+	if (!ctrl || !ctrl->dev) {
+		DP_ERR("invalid args\n");
+		return -EINVAL;
+	}
+
+	np = ctrl->dev->of_node;
+
+	usb_node = of_parse_phandle(np, "usb-controller", 0);
+	if (!usb_node) {
+		DP_ERR("unable to get usb node\n");
+		return -EINVAL;
+	}
+
+	usb_pdev = of_find_device_by_node(usb_node);
+	if (!usb_pdev) {
+		of_node_put(usb_node);
+		DP_ERR("unable to get usb pdev\n");
+		return -EINVAL;
+	}
+
+	dwc3_msm_set_usb_redriver_eq(&usb_pdev->dev);
+
+	of_node_put(usb_node);
+	platform_device_put(usb_pdev);
+
+	return 0;
+}
+
+static int update_redriver_seq(struct dp_ctrl_private *ctrl)
+{
+
+	DP_INFO("link_params.bw_code=%d,lane_count =%d, phy_params.v_level=%d,phy_params.p_level=%d\n",
+		ctrl->link->link_params.bw_code,ctrl->link->link_params.lane_count, ctrl->link->phy_params.v_level, ctrl->link->phy_params.p_level);
+	if (ctrl->link->link_params.bw_code == DP_LINK_BW_8_1 &&
+		ctrl->link->link_params.lane_count == 2 &&
+		ctrl->link->phy_params.v_level == 0 &&
+		ctrl->link->phy_params.p_level == 0) {
+			dp_ctrl_set_usb_redriver_eq(ctrl);
+	}
+
+	return 0;
+}
+
 static int dp_ctrl_link_setup(struct dp_ctrl_private *ctrl, bool shallow)
 {
 	int rc = -EINVAL;
@@ -769,9 +819,10 @@ static int dp_ctrl_link_setup(struct dp_ctrl_private *ctrl, bool shallow)
 		dp_ctrl_select_training_pattern(ctrl, downgrade);
 
 		rc = dp_ctrl_setup_main_link(ctrl);
-		if (!rc)
+		if (!rc) {
+			update_redriver_seq(ctrl);
 			break;
-
+		}
 		/*
 		 * Shallow means link training failure is not important.
 		 * If it fails, we still keep the link clocks on.

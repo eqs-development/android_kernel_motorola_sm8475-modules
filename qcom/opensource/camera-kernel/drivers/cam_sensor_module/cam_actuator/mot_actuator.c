@@ -45,6 +45,8 @@ typedef enum {
 	MOT_ACTUATOR_NUM,
 } mot_actuator_type;
 
+static int workqueue_status = 0;
+
 typedef enum {
 	REGULATOR_IOVDD,
 	REGULATOR_AFVDD,
@@ -855,6 +857,7 @@ int mot_actuator_on_vibrate_stop(void)
 		delayms = PHONE_DROP_MAX_DURATION;
 	}
 	if (mot_actuator_fctrl.mot_actuator_wq != NULL) {
+		workqueue_status = 1;
 		queue_delayed_work(mot_actuator_fctrl.mot_actuator_wq,
 			&mot_actuator_fctrl.delay_work, msecs_to_jiffies(delayms));
 	} else {
@@ -1136,6 +1139,7 @@ static void mot_actuator_delayed_process(struct work_struct *work)
 		}
 	}
 	mot_actuator_state = MOT_ACTUATOR_RELEASED;
+	workqueue_status = 0;
 	CAM_WARN(CAM_ACTUATOR, "release actuator done");
 	mutex_unlock(&actuator_fctrl->actuator_lock);
 	__pm_relax(&actuator_fctrl->actuator_wakelock);
@@ -1245,6 +1249,11 @@ static ssize_t mot_actuator_dump_store(struct device *dev,
 	return count;
 }
 
+int mot_actuator_get_workqueue_status(void)
+{
+	return workqueue_status;
+}
+EXPORT_SYMBOL(mot_actuator_get_workqueue_status);
 
 static inline ssize_t mot_actuator_park_lens_table_show(struct device *dev,
 		struct device_attribute *attr, char *buf)

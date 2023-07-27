@@ -36,4 +36,5 @@ void mot_actuator_driver_exit(void);
 
 int mot_actuator_on_vibrate_start(void);
 int mot_actuator_on_vibrate_stop(void);
+int mot_actuator_get_workqueue_status(void);
 #endif /*__MOT_ACTUATOR_H__*/

@@ -18,6 +18,7 @@
 
 extern int mot_actuator_on_vibrate_start(void);
 extern int mot_actuator_on_vibrate_stop(void);
+extern int mot_actuator_get_workqueue_status(void);
 
 static atomic_t mot_actuator_ref_count = ATOMIC_INIT(0);
 static unsigned long mot_actuator_consumers = ATOMIC_INIT(0);
@@ -52,7 +53,7 @@ int mot_actuator_put(mot_actuator_client user)
 
 	consumers = mot_actuator_get_consumers();
 	if (((consumers & CLINET_VIBRATOR_MASK) == CLINET_VIBRATOR_MASK) &&
-		(user != ACTUATOR_CLIENT_VIBRATOR)) {
+		(user != ACTUATOR_CLIENT_VIBRATOR) && !mot_actuator_get_workqueue_status()) {
 		//If only vibrator noise eliminator exists, move lens to required position
 		CAM_DBG(CAM_ACTUATOR, "Set actuator pos for vibrator");
 		mot_actuator_on_vibrate_start();

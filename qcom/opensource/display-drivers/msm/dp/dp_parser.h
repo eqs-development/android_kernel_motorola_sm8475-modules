@@ -237,6 +237,7 @@ struct dp_parser {
 	unsigned long qos_cpu_latency;
 	const char *mst_fixed_display_type[MAX_DP_MST_STREAMS];
 	const char *display_type;
+	bool dp_downgrade;
 
 	int (*parse)(struct dp_parser *parser);
 	struct dp_io_data *(*get_io)(struct dp_parser *parser, char *name);

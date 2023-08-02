@@ -758,6 +758,28 @@ static int dp_ctrl_set_usb_redriver_eq(struct dp_ctrl_private *ctrl)
 	return 0;
 }
 
+const static char *monitor_balcklist [] = {
+	"P27h-30",
+	"P32p-30"
+};
+
+static bool is_allow_downgrade(u8 *monitor_name)
+{
+	int i=0;
+	bool is_allow = false;
+
+	while(i < sizeof(monitor_balcklist)/sizeof(char *)) {
+		if(strstr(monitor_name, monitor_balcklist[i]) != NULL) {
+			is_allow = true;
+			DP_INFO("match the monitor name=%s\n", monitor_balcklist[i]);
+			break;
+		}
+		i++;
+	}
+
+	return is_allow;
+}
+
 static int update_redriver_seq(struct dp_ctrl_private *ctrl)
 {
 
@@ -787,8 +809,19 @@ static int dp_ctrl_link_setup(struct dp_ctrl_private *ctrl, bool shallow)
 	catalog->phy_lane_cfg(catalog, ctrl->orientation,
 				link_params->lane_count);
 
+	if (ctrl->parser->dp_downgrade &&
+		link_params->bw_code == DP_LINK_BW_8_1 &&
+		link_params->lane_count == 4 &&
+		is_allow_downgrade(ctrl->panel->edid_ctrl->monitor_name)) {
+
+		ctrl->initial_bw_code = DP_LINK_BW_5_4;
+		dp_ctrl_link_rate_down_shift(ctrl);
+		downgrade = true;
+		DP_INFO("downgrade to DP_LINK_BW_5_4\n");
+	}
+
 	while (1) {
-		DP_DEBUG("bw_code=%d, lane_count=%d\n",
+		DP_INFO("bw_code=%d, lane_count=%d\n",
 			link_params->bw_code, link_params->lane_count);
 
 		rc = dp_ctrl_enable_link_clock(ctrl);

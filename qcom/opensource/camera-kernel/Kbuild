@@ -84,6 +84,10 @@ else ifneq (,$(filter avatrn, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/avatrn.mk
 else ifneq (,$(filter avatrn_factory, $(TARGET_PRODUCT)))
 include $(CAMERA_KERNEL_ROOT)/config/avatrn_factory.mk
+else ifneq (,$(filter boston, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/boston.mk
+else ifneq (,$(filter boston_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/boston_factory.mk
 endif
 
 # List of all camera-kernel headers

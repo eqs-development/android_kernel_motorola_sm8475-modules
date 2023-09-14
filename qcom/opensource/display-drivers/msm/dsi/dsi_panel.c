@@ -5041,6 +5041,21 @@ end:
 
 }
 
+static ssize_t dsi_panel_set_hbm_status(struct dsi_panel *panel, bool hbm_status,
+										bool fodhbm_status)
+{
+	struct msm_param_info param_info;
+	param_info.param_idx = PARAM_HBM_ID;
+	if(hbm_status)
+		param_info.value = HBM_ON_STATE;
+	else if(fodhbm_status)
+		param_info.value = HBM_FOD_ON_STATE;
+	else
+		param_info.value = HBM_OFF_STATE;
+
+	return dsi_panel_set_param(panel, &param_info);
+}
+
 static ssize_t sysfs_hbm_read(struct device *dev,
 			      struct device_attribute *attr,
 			      char *buf)
@@ -5062,7 +5077,6 @@ static ssize_t sysfs_hbm_write(struct device *dev,
 {
 	struct dsi_display *display = dev_get_drvdata(dev);
 	struct dsi_panel *panel = display->panel;
-	struct msm_param_info param_info;
 	bool status;
 	int rc;
 
@@ -5073,10 +5087,7 @@ static ssize_t sysfs_hbm_write(struct device *dev,
 	if (panel->hbm_enabled == status)
 		goto exit;
 
-	param_info.param_idx = PARAM_HBM_ID;
-	param_info.value = status ? HBM_ON_STATE : HBM_OFF_STATE;
-
-	rc = dsi_panel_set_param(panel, &param_info);
+	rc = dsi_panel_set_hbm_status(panel, status, panel->fod_hbm_enabled);
 	if (rc)
 		goto exit;
 
@@ -5120,10 +5131,7 @@ static ssize_t sysfs_fod_hbm_write(struct device *dev,
 	if (panel->fod_hbm_enabled == status)
 		goto exit;
 
-	param_info.param_idx = PARAM_HBM_ID;
-	param_info.value = status ? HBM_FOD_ON_STATE : HBM_OFF_STATE;
-
-	rc = dsi_panel_set_param(panel, &param_info);
+	rc =  dsi_panel_set_hbm_status(panel, panel->hbm_enabled, status);
 	if (rc)
 		goto exit;
 
@@ -5134,6 +5142,15 @@ exit:
 }
 
 static DEVICE_ATTR(fod_hbm, 0644, sysfs_fod_hbm_read, sysfs_fod_hbm_write);
+
+static ssize_t dsi_panel_set_dc_dimming_status(struct dsi_panel *panel, bool status)
+{
+	struct msm_param_info param_info;
+	param_info.param_idx = PARAM_DC_ID;
+	param_info.value = status ? DC_ON_STATE : DC_OFF_STATE;
+
+	return dsi_panel_set_param(panel, &param_info);
+}
 
 static ssize_t sysfs_dc_dimming_read(struct device *dev,
 				     struct device_attribute *attr,
@@ -5156,7 +5173,6 @@ static ssize_t sysfs_dc_dimming_write(struct device *dev,
 {
 	struct dsi_display *display = dev_get_drvdata(dev);
 	struct dsi_panel *panel = display->panel;
-	struct msm_param_info param_info;
 	bool status;
 	int rc;
 
@@ -5167,10 +5183,7 @@ static ssize_t sysfs_dc_dimming_write(struct device *dev,
 	if (panel->dc_state == status)
 		goto exit;
 
-	param_info.param_idx = PARAM_DC_ID;
-	param_info.value = status ? DC_ON_STATE : DC_OFF_STATE;
-
-	rc = dsi_panel_set_param(panel, &param_info);
+	rc = dsi_panel_set_dc_dimming_status(panel, status);
 	if (rc)
 		goto exit;
 

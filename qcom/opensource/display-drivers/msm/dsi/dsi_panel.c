@@ -5054,6 +5054,7 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 	const char *panel_physical_type;
 	int rc = 0;
 	const char *pname;
+	const char *pdeclare;
 
 	panel = kzalloc(sizeof(*panel), GFP_KERNEL);
 	if (!panel)
@@ -5081,6 +5082,15 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 				sizeof(panel->panel_supplier));
 	} else
 		strlcpy(panel->panel_supplier, pname, sizeof(panel->panel_supplier));
+
+	pdeclare = utils->get_property(utils->data,
+				"qcom,mdss-dsi-panel-declare", NULL);
+	if (!pdeclare) {
+	    strcpy(panel->panel_declare, "");
+	} else {
+	    DSI_INFO("qcom,mdss-dsi-panel-declare: %s\n", pdeclare);
+	    strlcpy(panel->panel_declare, pdeclare, sizeof(panel->panel_declare));
+	}
 
 	/*
 	 * Set panel type to LCD as default.

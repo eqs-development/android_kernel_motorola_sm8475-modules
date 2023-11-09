@@ -964,6 +964,16 @@ static struct snd_soc_dai_link msm_mi2s_dai_links[] = {
                 .ignore_pmdown_time = 1,
                 SND_SOC_DAILINK_REG(quin_mi2s_rx_cusco_fs19xx),
         },
+        {
+                .name = LPASS_BE_QUIN_MI2S_TX,
+                .stream_name = LPASS_BE_QUIN_MI2S_TX,
+                .capture_only = 1,
+                .trigger = {SND_SOC_DPCM_TRIGGER_POST,
+                        SND_SOC_DPCM_TRIGGER_POST},
+                .ops = &msm_common_be_ops,
+                .ignore_suspend = 1,
+                SND_SOC_DAILINK_REG(quin_mi2s_tx_cusco_fs19xx),
+        },
 	{
 		.name = LPASS_BE_SEN_MI2S_RX,
 		.stream_name = LPASS_BE_SEN_MI2S_RX,

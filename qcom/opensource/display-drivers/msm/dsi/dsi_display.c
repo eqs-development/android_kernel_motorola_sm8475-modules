@@ -6859,8 +6859,6 @@ static ssize_t panelDeclare_show(struct device *device,
 	sde_conn = to_sde_connector(conn);
 	dsi_display = sde_conn->display;
 
-	dsi_display->panel->panelPcdCheck_enable = 0;
-
 	if (sde_conn->connector_type == DRM_MODE_CONNECTOR_DSI)
 	    return scnprintf(buf, PAGE_SIZE, "%s\n", dsi_display->panel->panel_declare);
 	else

@@ -277,6 +277,7 @@ int fs19xx_shut_down(fsm_dev_t *fsm_dev)
 
 int fs19xx_pre_calib(fsm_dev_t *fsm_dev)
 {
+	uint16_t pwrctrl, ngctrl;
 	uint16_t tsctrl;
 	uint16_t bsgctrl;
 	uint16_t lpmctrl;
@@ -284,6 +285,18 @@ int fs19xx_pre_calib(fsm_dev_t *fsm_dev)
 
 	if (fsm_dev == NULL) {
 		return -EINVAL;
+	}
+	ret = fsm_reg_read(fsm_dev, REG(FS19XX_PWRCTRL), &pwrctrl);
+	if (pwrctrl == 0x0000) {
+		ret |= fsm_reg_write(fsm_dev, REG(FS19XX_PWRCTRL), 0x0001); // power down
+		fsm_delay_ms(30);
+	}
+
+	if (HIGH8(fsm_dev->version) == FS19XX_DEV_ID) {
+		// Disabel NG
+		ret = fsm_reg_read(fsm_dev, 0x39, &ngctrl);
+		set_bf_val(&ngctrl, 0x0F39, 0);
+		ret |= fsm_reg_write(fsm_dev, 0x39, ngctrl);
 	}
 	ret = fsm_reg_multiread(fsm_dev, 0x3C, &lpmctrl);
 	if (get_bf_val(0x0F3C, lpmctrl)) {
@@ -307,6 +320,7 @@ int fs19xx_pre_calib(fsm_dev_t *fsm_dev)
 		ret |= fsm_reg_write(fsm_dev, 0xBC, bsgctrl);
 		fsm_delay_ms(35);
 	}
+	ret |= fsm_reg_write(fsm_dev, REG(FS19XX_PWRCTRL), pwrctrl); // recover
 	fsm_dev->cur_scene = 0;
 
 	return ret;

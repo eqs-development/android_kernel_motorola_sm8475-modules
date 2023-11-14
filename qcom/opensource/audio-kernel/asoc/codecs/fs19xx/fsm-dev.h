@@ -30,8 +30,8 @@
 //#define CONFIG_FSM_FS18YN
 
 /* VERSION INFORMATION */
-#define FSM_CODE_VERSION "v4.0.8"
-#define FSM_CODE_DATE    "20231027"
+#define FSM_CODE_VERSION "v4.0.8-a"
+#define FSM_CODE_DATE    "20231110"
 #define FSM_GIT_BRANCH   ""
 #define FSM_GIT_COMMIT   ""
 

@@ -1,7 +1,7 @@
 # add -Wall to try to catch everything we can.
 EXTRA_CFLAGS += -Wall
 EXTRA_CFLAGS += \
-		-I$(ANDROID_BUILD_TOP)/motorola/kernel/modules/include
+		-I$(KERNEL_SRC)/../sm8475-modules/motorola/modules/include
 
 obj-m := goodix_brl_mmi.o
 goodix_brl_mmi-objs := \

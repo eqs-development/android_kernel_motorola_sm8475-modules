@@ -2589,7 +2589,7 @@ static void sde_encoder_virt_mode_set(struct drm_encoder *drm_enc,
 	int i = 0, ret;
 	int num_lm, num_intf, num_pp_per_intf;
 
-	if (!drm_enc) {
+	if (!drm_enc || !drm_enc->crtc) {
 		SDE_ERROR("invalid encoder\n");
 		return;
 	}
@@ -3500,6 +3500,9 @@ static void sde_encoder_underrun_callback(struct drm_encoder *drm_enc,
 			sde_enc->cur_master->ops.get_underrun_line_count)
 		sde_enc->cur_master->ops.get_underrun_line_count(
 				sde_enc->cur_master);
+
+	pr_warn("Underrun detected count:%d",
+                atomic_read(&phy_enc->underrun_cnt));
 
 	trace_sde_encoder_underrun(DRMID(drm_enc),
 		atomic_read(&phy_enc->underrun_cnt));

@@ -2917,6 +2917,7 @@ static irqreturn_t dsi_ctrl_isr(int irq, void *ptr)
 static int _dsi_ctrl_setup_isr(struct dsi_ctrl *dsi_ctrl)
 {
 	int irq_num, rc;
+	uint32_t intr_idx;
 
 	if (!dsi_ctrl)
 		return -EINVAL;
@@ -2927,6 +2928,21 @@ static int _dsi_ctrl_setup_isr(struct dsi_ctrl *dsi_ctrl)
 	init_completion(&dsi_ctrl->irq_info.vid_frame_done);
 	init_completion(&dsi_ctrl->irq_info.cmd_frame_done);
 	init_completion(&dsi_ctrl->irq_info.bta_done);
+
+	 /*
+	 * If there is an unbalanced refcount for any interrupt, irq_stat_mask
+	 * remain non zero on suspend. Due to this, enable_irq does not get
+	 * called on resume, leading to ctrl ISR permanently disabled.
+	 */
+	for (intr_idx = 0; intr_idx < DSI_STATUS_INTERRUPT_COUNT; intr_idx++) {
+	 if (dsi_ctrl->irq_info.irq_stat_refcount[intr_idx]) {
+	 DSI_CTRL_ERR(dsi_ctrl,
+	 "[drm tmp debug log]refcount mismatch, intr_idx %d\n", intr_idx);
+	 SDE_EVT32(intr_idx, dsi_ctrl->irq_info.irq_stat_mask,
+	 dsi_ctrl->irq_info.irq_stat_refcount[intr_idx]);
+	 SDE_DBG_DUMP(SDE_DBG_BUILT_IN_ALL, "panic");
+	 }
+	 }
 
 	irq_num = platform_get_irq(dsi_ctrl->pdev, 0);
 	if (irq_num < 0) {
@@ -2979,6 +2995,20 @@ void dsi_ctrl_enable_status_interrupt(struct dsi_ctrl *dsi_ctrl,
 		dsi_ctrl->irq_info.irq_stat_refcount[intr_idx]);
 
 	spin_lock_irqsave(&dsi_ctrl->irq_info.irq_lock, flags);
+
+	if (intr_idx == DSI_SINT_CMD_MODE_DMA_DONE) {
+		if (dsi_ctrl->irq_info.irq_stat_refcount[intr_idx]) {
+			dsi_ctrl->refcount_non_zero++;
+			SDE_EVT32(dsi_ctrl->refcount_non_zero);
+			if (dsi_ctrl->refcount_non_zero == 3) {
+				DSI_CTRL_ERR(dsi_ctrl, "refcount_non_zero %d\n",
+					dsi_ctrl->refcount_non_zero);
+				SDE_DBG_DUMP(SDE_DBG_BUILT_IN_ALL, "panic");
+			}
+		} else {
+			dsi_ctrl->refcount_non_zero = 0;
+		}
+	}
 
 	if (dsi_ctrl->irq_info.irq_stat_refcount[intr_idx] == 0) {
 		/* enable irq on first request */
@@ -3484,6 +3514,10 @@ error_disable_gdsc:
 int dsi_ctrl_cmd_transfer(struct dsi_ctrl *dsi_ctrl, struct dsi_cmd_desc *cmd)
 {
 	int rc = 0;
+	int i = 0;
+	u8 *pcmddata = NULL;
+	char dbgcmd[4] = {0};
+	unsigned char *dbgcmds = NULL;
 
 	if (!dsi_ctrl || !cmd) {
 		DSI_CTRL_ERR(dsi_ctrl, "Invalid params\n");
@@ -3498,6 +3532,19 @@ int dsi_ctrl_cmd_transfer(struct dsi_ctrl *dsi_ctrl, struct dsi_cmd_desc *cmd)
 			DSI_CTRL_ERR(dsi_ctrl, "read message failed read length, rc=%d\n",
 					rc);
 	} else {
+	       if (dsi_ctrl->mipi_cmd_log_en) {
+	           dbgcmds = kzalloc(cmd->msg.tx_len * 4 + 1, GFP_KERNEL);
+	           if (dbgcmds) {
+			pcmddata = (u8*)cmd->msg.tx_buf;
+			for (i = 0; i < cmd->msg.tx_len; i++) {
+				snprintf(dbgcmd, 4, " %2x", pcmddata[i]);
+				strcat(dbgcmds, dbgcmd);
+			}
+			printk("%s: dsi_ctrl_cmd_transfer len=%zd, type=0x%x %s cmds=%s\n",
+				   dsi_ctrl->name, cmd->msg.tx_len, cmd->msg.type, (cmd->msg.flags & MIPI_DSI_MSG_USE_LPM) ? "hs" : "lp", dbgcmds);
+			kfree(dbgcmds);
+	           }
+		}
 		rc = dsi_message_tx(dsi_ctrl, cmd);
 		if (rc)
 			DSI_CTRL_ERR(dsi_ctrl, "command msg transfer failed, rc = %d\n",

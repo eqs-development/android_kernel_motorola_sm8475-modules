@@ -462,8 +462,19 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 		if (_msm_seamless_for_conn(connector, old_conn_state, true))
 			continue;
 
+		if (!connector->state->best_encoder ||
+			!connector->state->best_encoder->helper_private){
+			DRM_WARN("connector->state->best_encoder helper_private NULL\n");
+			continue;
+		}
+
 		encoder = connector->state->best_encoder;
 		funcs = encoder->helper_private;
+
+		if (!encoder->name){
+			DRM_WARN("encoder->name NULL\n");
+			continue;
+		}
 
 		DRM_DEBUG_ATOMIC("enabling [ENCODER:%d:%s]\n",
 				 encoder->base.id, encoder->name);
@@ -512,7 +523,17 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 		if (_msm_seamless_for_conn(connector, old_conn_state, true))
 			continue;
 
+		if (!connector->state->best_encoder){
+			DRM_WARN("connector->state->best_encoder NULL\n");
+			continue;
+		}
+
 		encoder = connector->state->best_encoder;
+
+		if (!encoder->name){
+			DRM_WARN("encoder->name NULL\n");
+			continue;
+		}
 
 		DRM_DEBUG_ATOMIC("bridge enable enabling [ENCODER:%d:%s]\n",
 				 encoder->base.id, encoder->name);

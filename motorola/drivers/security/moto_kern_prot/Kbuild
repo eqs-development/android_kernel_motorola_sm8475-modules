@@ -1,6 +1,6 @@
 ccflags-y += -Wall
-ccflags-y += -I$(ANDROID_BUILD_TOP)/motorola/kernel/modules/drivers/misc/moto_kern_prot
-ccflags-y += -I$(ANDROID_BUILD_TOP)/motorola/kernel/modules/include
+ccflags-y += -I$(KERNEL_SRC)/../sm8475-modules/motorola/modules/drivers/misc/moto_kern_prot
+ccflags-y += -I$(KERNEL_SRC)/../sm8475-modules/motorola/modules/include
 ccflags-y += -I$(ANDROID_BUILD_TOP)/kernel_platform/msm-kernel/include
 ccflags-y += -I$(ANDROID_BUILD_TOP)/kernel_platform/msm-kernel/
 

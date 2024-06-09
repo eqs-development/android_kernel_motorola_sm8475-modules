@@ -48,6 +48,50 @@ endif
 
 ifeq ($(CONFIG_ARCH_PARROT), y)
 include $(CAMERA_KERNEL_ROOT)/config/parrot.mk
+endif 
+
+ifneq (,$(filter hiphid hiphic hiphi hiphid_factory hiphic_factory hiphi_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/hiphi.mk
+else ifneq (,$(filter li li_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/li.mk
+else ifneq (,$(filter oneli oneli_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/oneli.mk
+else ifneq (,$(filter eqs eqs_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/eqs.mk
+else ifneq (,$(filter bronco, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/bronco.mk
+else ifneq (,$(filter bronco_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/bronco_factory.mk
+else ifneq (,$(filter felix felix_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/felix.mk
+else ifneq (,$(filter zeekr, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/zeekr.mk
+else ifneq (,$(filter zeekr_cn, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/zeekr.mk
+else ifneq (,$(filter zeekr_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/zeekr_factory.mk
+else ifneq (,$(filter lynkco, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/lynkco.mk
+else ifneq (,$(filter lynkco_cn, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/lynkco.mk
+else ifneq (,$(filter lynkco_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/lynkco_factory.mk
+else ifneq (,$(filter geneva geneva_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/geneva.mk
+else ifneq (,$(filter genevn genevn_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/genevn.mk
+else ifneq (,$(filter avatrn, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/avatrn.mk
+else ifneq (,$(filter avatrn_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/avatrn_factory.mk
+else ifneq (,$(filter boston, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/boston.mk
+else ifneq (,$(filter boston_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/boston_factory.mk
+else ifneq (,$(filter cusco, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/cusco.mk
+else ifneq (,$(filter cusco_factory, $(TARGET_PRODUCT)))
+include $(CAMERA_KERNEL_ROOT)/config/cusco_factory.mk
 endif
 
 # List of all camera-kernel headers
@@ -224,6 +268,9 @@ camera-$(CONFIG_SPECTRA_SENSOR) += \
 	drivers/cam_sensor_module/cam_eeprom/cam_eeprom_soc.o \
 	drivers/cam_sensor_module/cam_ois/cam_ois_dev.o \
 	drivers/cam_sensor_module/cam_ois/cam_ois_core.o \
+	drivers/cam_sensor_module/cam_ois/cam_ois_dw9781.o \
+	drivers/cam_sensor_module/cam_ois/cam_ois_dw9784.o \
+	drivers/cam_sensor_module/cam_ois/cam_ois_aw86006.o \
 	drivers/cam_sensor_module/cam_ois/cam_ois_soc.o \
 	drivers/cam_sensor_module/cam_sensor/cam_sensor_dev.o \
 	drivers/cam_sensor_module/cam_sensor/cam_sensor_core.o \
@@ -237,6 +284,15 @@ camera-$(CONFIG_SPECTRA_SENSOR) += \
 	drivers/cam_sensor_module/cam_flash/cam_flash_dev.o \
 	drivers/cam_sensor_module/cam_flash/cam_flash_core.o \
 	drivers/cam_sensor_module/cam_flash/cam_flash_soc.o
+
+ifneq (,$(filter $(CONFIG_AF_NOISE_ELIMINATION), y m))
+camera-$(CONFIG_SPECTRA_SENSOR) += \
+	drivers/cam_sensor_module/cam_actuator/mot_actuator.o \
+	drivers/cam_sensor_module/cam_actuator/mot_actuator_policy.o \
+	drivers/cam_sensor_module/cam_actuator/mot_ois.o
+endif
+
+camera-$(CONFIG_CCI_DEBUG_INTF) += drivers/cam_sensor_module/cam_cci/cci_intf.o
 
 camera-$(CONFIG_SPECTRA_CUSTOM) += \
 	drivers/cam_cust/cam_custom_hw_mgr/cam_custom_hw1/cam_custom_sub_mod_soc.o \

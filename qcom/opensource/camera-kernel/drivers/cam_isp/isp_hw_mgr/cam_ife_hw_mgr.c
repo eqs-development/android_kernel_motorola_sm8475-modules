@@ -3270,7 +3270,7 @@ static int cam_ife_hw_mgr_acquire_csid_hw(
 		if (rc == -EBUSY)
 			busy_count++;
 		else
-			CAM_ERR(CAM_ISP, "CSID[%d] acquire failed (rc=%d)", i, rc);
+			CAM_DBG(CAM_ISP, "CSID[%d] acquire failed (rc=%d)", i, rc);
 	}
 
 	if (compat_count == busy_count)

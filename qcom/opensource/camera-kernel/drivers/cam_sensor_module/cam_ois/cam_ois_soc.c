@@ -34,6 +34,19 @@ static int cam_ois_get_dt_data(struct cam_ois_ctrl_t *o_ctrl)
 			o_ctrl->ois_device_type);
 		return -EINVAL;
 	}
+#if (defined(CONFIG_DONGWOON_OIS_VSYNC) || defined(CONFIG_AW86006_OIS_VSYNC))
+  	if (!of_property_read_bool(of_node, "vsync-irq-support")) {
+  		o_ctrl->is_ois_vsync_irq_supported = false;
+  	} else {
+  		o_ctrl->is_ois_vsync_irq_supported = true;
+  	}
+#endif
+	rc = of_property_read_string(of_node, "ois-name", &o_ctrl->ic_name);
+	if (rc) {
+		CAM_DBG(CAM_OIS, "ois-name is not available in the node: %d", rc);
+		o_ctrl->ic_name = NULL;
+	}
+
 	rc = cam_soc_util_get_dt_properties(soc_info);
 	if (rc < 0) {
 		CAM_ERR(CAM_OIS, "cam_soc_util_get_dt_properties rc %d",

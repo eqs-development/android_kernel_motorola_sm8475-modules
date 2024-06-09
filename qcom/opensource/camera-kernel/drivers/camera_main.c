@@ -20,6 +20,9 @@
 #include "cam_cci_dev.h"
 #include "cam_sensor_dev.h"
 #include "cam_actuator_dev.h"
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+#include "mot_actuator.h"
+#endif
 #include "cam_csiphy_dev.h"
 #include "cam_eeprom_dev.h"
 #include "cam_ois_dev.h"
@@ -109,6 +112,9 @@ static const struct camera_submodule_component camera_sensor[] = {
 	{&cam_csiphy_init_module, &cam_csiphy_exit_module},
 	{&cam_tpg_init_module, &cam_tpg_exit_module},
 	{&cam_actuator_driver_init, &cam_actuator_driver_exit},
+#ifdef CONFIG_AF_NOISE_ELIMINATION
+	{&mot_actuator_driver_init, &mot_actuator_driver_exit},
+#endif
 	{&cam_sensor_driver_init, &cam_sensor_driver_exit},
 	{&cam_eeprom_driver_init, &cam_eeprom_driver_exit},
 	{&cam_ois_driver_init, &cam_ois_driver_exit},
@@ -175,6 +181,12 @@ static const struct camera_submodule_component camera_presil[] = {
 #endif
 };
 
+static const struct camera_submodule_component camera_cci_debug[] = {
+#ifdef CONFIG_CCI_DEBUG_INTF
+	{&cam_cci_debug_sub_module_init, &cam_cci_debug_sub_module_exit},
+#endif
+};
+
 static const struct camera_submodule submodule_table[] = {
 	{
 		.name = "Camera BASE",
@@ -235,6 +247,11 @@ static const struct camera_submodule submodule_table[] = {
 		.name = "Camera Presil",
 		.num_component = ARRAY_SIZE(camera_presil),
 		.component = camera_presil,
+	},
+	{
+		.name = "Camera CCI Debug",
+		.num_component = ARRAY_SIZE(camera_cci_debug),
+		.component = camera_cci_debug,
 	}
 };
 

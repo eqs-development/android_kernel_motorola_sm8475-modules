@@ -27,6 +27,28 @@
 
 #define OIS_DRIVER_I2C "cam-i2c-ois"
 
+#ifdef CONFIG_DONGWOON_OIS_VSYNC
+
+#define PACKET_ADDR 0x70B0
+#define PACKET_BYTE 62
+#define MAX_PACKET 5
+#define MAX_SAMPLE 50
+
+#define READ_COUNT 6
+#define DATA_READY_ADDR 0x70DA
+#define DATA_READY 0x0001
+
+#endif
+
+#ifdef CONFIG_AW86006_OIS_VSYNC
+
+#define RING_BUFFER_LEN 42
+#define AW86006_PACKET_ENABLE 0x0003
+#define AW86006_PACKET_ADDR 0x0006
+#define AW86006_MAX_SAMPLE 10
+
+#endif
+
 enum cam_ois_state {
 	CAM_OIS_INIT,
 	CAM_OIS_ACQUIRE,
@@ -84,6 +106,13 @@ struct cam_ois_intf_params {
 	struct cam_req_mgr_crm_cb *crm_cb;
 };
 
+struct awrw_ctrl {
+	uint32_t addr[4];
+	uint16_t reg_num;
+	uint8_t flag;
+	uint8_t *reg_data;
+};
+
 /**
  * struct cam_ois_ctrl_t - OIS ctrl private data
  * @device_name     :   ois device_name
@@ -97,13 +126,22 @@ struct cam_ois_intf_params {
  * @i2c_fwinit_data :   ois i2c firmware init settings
  * @i2c_init_data   :   ois i2c init settings
  * @i2c_mode_data   :   ois i2c mode settings
+ * @i2c_preprog_data    :   ois i2c preprog settings
+ * @i2c_precoeff_data   :   ois i2c precoeff settings
+ * @i2c_postcalib_data  :   ois i2c postcalib settings
  * @i2c_time_data   :   ois i2c time write settings
  * @i2c_calib_data  :   ois i2c calib settings
  * @ois_device_type :   ois device type
  * @cam_ois_state   :   ois_device_state
  * @ois_fw_flag     :   flag for firmware download
+ * @ois_preprog_flag    :   flag for preprog reg settings
+ * @ois_precoeff_flag   :   flag for precoeff reg settings
  * @is_ois_calib    :   flag for Calibration data
+ * @ois_postcalib_flag  :   flag for postcalib reg settings
  * @opcode          :   ois opcode
+ * @ois_fw_inc_addr     :   flag to increment address when sending fw
+ * @ois_fw_addr_type    :   address type of fw
+ * @ois_fw_txn_data_sz  :   num data bytes per i2c txn when sending fw
  * @device_name     :   Device name
  *
  */
@@ -119,15 +157,63 @@ struct cam_ois_ctrl_t {
 	struct cam_ois_intf_params bridge_intf;
 	struct i2c_settings_array i2c_fwinit_data;
 	struct i2c_settings_array i2c_init_data;
+	struct i2c_settings_array i2c_preprog_data;
+	struct i2c_settings_array i2c_precoeff_data;
 	struct i2c_settings_array i2c_calib_data;
+	struct i2c_settings_array i2c_postcalib_data;
 	struct i2c_settings_array i2c_mode_data;
+#ifdef CONFIG_MOT_OIS_AF_DRIFT
+	struct i2c_settings_array i2c_af_drift_data;
+#endif
+#ifdef CONFIG_MOT_OIS_AFTER_SALES_SERVICE
+	struct i2c_settings_array i2c_gyro_data;
+#endif
 	struct i2c_settings_array i2c_time_data;
 	enum msm_camera_device_type_t ois_device_type;
 	enum cam_ois_state cam_ois_state;
 	char ois_name[32];
 	uint8_t ois_fw_flag;
+	uint8_t ois_preprog_flag;
+	uint8_t ois_precoeff_flag;
 	uint8_t is_ois_calib;
+	uint8_t ois_postcalib_flag;
+	uint8_t ois_fw_txn_data_sz;
+	uint8_t ois_fw_inc_addr;
+	uint8_t ois_fw_addr_type;
+	uint8_t ois_fw_data_type;
 	struct cam_ois_opcode opcode;
+#ifdef CONFIG_DONGWOON_OIS_VSYNC
+	bool is_ois_vsync_irq_supported;
+	int vsync_irq;
+	struct mutex vsync_mutex;
+	struct completion vsync_completion;
+	uint64_t prev_timestamp;
+	uint64_t curr_timestamp;
+	int packet_count;
+	bool is_first_vsync;
+	uint8_t *ois_data;
+	int ois_data_size;
+	bool is_video_mode;
+	bool is_need_eis_data;
+#endif
+	/* awinic_add */
+	const char *ic_name;
+	struct work_struct aw_fw_update_work;
+	struct mutex aw_ois_mutex;
+	struct awrw_ctrl *awrw_ctrl;
+#ifdef CONFIG_AW86006_OIS_VSYNC
+	bool is_ois_vsync_irq_supported;
+	int vsync_irq;
+	struct mutex vsync_mutex;
+	struct completion vsync_completion;
+	uint64_t prev_timestamp;
+	uint64_t curr_timestamp;
+	bool is_first_vsync;
+	uint8_t *ois_data;
+	int ois_data_size;
+	bool is_video_mode;
+	bool is_need_eis_data;
+#endif
 };
 
 /**

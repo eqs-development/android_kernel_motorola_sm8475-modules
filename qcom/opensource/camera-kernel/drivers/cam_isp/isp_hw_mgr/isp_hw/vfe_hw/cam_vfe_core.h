@@ -25,6 +25,8 @@
 #define CAM_VFE_HW_IRQ_CAP_EXT_CSID        0x27
 #define CAM_VFE_HW_IRQ_CAP_LITE_EXT_CSID   0x21
 
+static struct mutex vfe_mutex = __MUTEX_INITIALIZER(vfe_mutex);
+
 struct cam_vfe_irq_hw_info {
 	int                                   reset_irq_handle;
 	uint32_t                              reset_mask;

@@ -17,6 +17,8 @@
 #include <linux/soc/qcom/fsa4480-i2c.h>
 #include <linux/pm_qos.h>
 #include <linux/nvmem-consumer.h>
+#include <linux/regulator/consumer.h>
+#include <linux/pm_runtime.h>
 #include <sound/control.h>
 #include <sound/core.h>
 #include <sound/soc.h>
@@ -31,6 +33,7 @@
 #include "device_event.h"
 #include "asoc/msm-cdc-pinctrl.h"
 #include "asoc/wcd-mbhc-v2.h"
+#include <asoc/msm-cdc-supply.h>
 #include "codecs/wcd938x/wcd938x-mbhc.h"
 #include "codecs/wcd937x/wcd937x-mbhc.h"
 #include "codecs/wsa883x/wsa883x.h"
@@ -79,6 +82,12 @@ struct msm_asoc_mach_data {
 	struct device_node *dmic23_gpio_p; /* used by pinctrl API */
 	struct device_node *dmic45_gpio_p; /* used by pinctrl API */
 	struct device_node *dmic67_gpio_p; /* used by pinctrl API */
+	struct device_node *dmic23_en_gpio_p;
+	struct device_node *dmic45_en_gpio_p;
+	struct device_node *dmic_supply;
+	struct cdc_regulator *regulator;
+	int num_supplies;
+	struct regulator_bulk_data *supplies;
 	struct pinctrl *usbc_en2_gpio_p; /* used by pinctrl API */
 	bool is_afe_config_done;
 	struct device_node *fsa_handle;
@@ -126,12 +135,20 @@ static struct wcd_mbhc_config wcd_mbhc_cfg = {
 	.key_code[5] = 0,
 	.key_code[6] = 0,
 	.key_code[7] = 0,
-	.linein_th = 5000,
+	.linein_th = 4000,
 	.moisture_en = false,
 	.mbhc_micbias = MIC_BIAS_2,
 	.anc_micbias = MIC_BIAS_2,
 	.enable_anc_mic_detect = false,
 	.moisture_duty_cycle_en = true,
+};
+
+static struct snd_soc_dapm_route left_wsa_audio_paths[] = {
+	{"SpkrLeft IN", NULL, "WSA_SPK1 OUT"},
+};
+
+static struct snd_soc_dapm_route right_wsa_audio_paths[] = {
+	{"SpkrRight IN", NULL, "WSA_SPK2 OUT"},
 };
 
 static bool msm_usbc_swap_gnd_mic(struct snd_soc_component *component, bool active)
@@ -308,7 +325,7 @@ static int msm_dmic_event(struct snd_soc_dapm_widget *w,
 	int ret = 0;
 	u32 dmic_idx;
 	int *dmic_gpio_cnt;
-	struct device_node *dmic_gpio;
+	struct device_node *dmic_gpio, *dmic_en;
 	char  *wname;
 
 	wname = strpbrk(w->name, "01234567");
@@ -336,11 +353,15 @@ static int msm_dmic_event(struct snd_soc_dapm_widget *w,
 	case 3:
 		dmic_gpio_cnt = &dmic_2_3_gpio_cnt;
 		dmic_gpio = pdata->dmic23_gpio_p;
+		if(pdata->dmic23_en_gpio_p)
+			dmic_en = pdata->dmic23_en_gpio_p;
 		break;
 	case 4:
 	case 5:
 		dmic_gpio_cnt = &dmic_4_5_gpio_cnt;
 		dmic_gpio = pdata->dmic45_gpio_p;
+		if(pdata->dmic45_en_gpio_p)
+			dmic_en = pdata->dmic45_en_gpio_p;
 		break;
 	case 6:
 	case 7:
@@ -353,13 +374,22 @@ static int msm_dmic_event(struct snd_soc_dapm_widget *w,
 		return -EINVAL;
 	}
 
-	dev_dbg(component->dev, "%s: event %d DMIC%d dmic_gpio_cnt %d\n",
+	dev_info(component->dev, "%s: event %d DMIC%d dmic_gpio_cnt %d\n",
 			__func__, event, dmic_idx, *dmic_gpio_cnt);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		(*dmic_gpio_cnt)++;
 		if (*dmic_gpio_cnt == 1) {
+			if (dmic_en) {
+				ret = msm_cdc_pinctrl_select_active_state(
+						dmic_en);
+				if (ret < 0) {
+					pr_err("%s: gpio set cannot be activated %sd",
+						__func__, "dmic_en");
+					return ret;
+				}
+			}
 			ret = msm_cdc_pinctrl_select_active_state(
 						dmic_gpio);
 			if (ret < 0) {
@@ -373,6 +403,15 @@ static int msm_dmic_event(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_POST_PMD:
 		(*dmic_gpio_cnt)--;
 		if (*dmic_gpio_cnt == 0) {
+			if (dmic_en) {
+				ret = msm_cdc_pinctrl_select_sleep_state(
+					dmic_en);
+				if (ret < 0) {
+					pr_err("%s: gpio set cannot be de-activated %sd",
+						__func__, "dmic_en");
+					return ret;
+				}
+			}
 			ret = msm_cdc_pinctrl_select_sleep_state(
 					dmic_gpio);
 			if (ret < 0) {
@@ -604,6 +643,64 @@ static struct snd_soc_dai_link ext_disp_be_dai_link[] = {
 		.ignore_pmdown_time = 1,
 		.ignore_suspend = 1,
 		SND_SOC_DAILINK_REG(display_port),
+	},
+};
+
+static struct snd_soc_dai_link msm_left_wsa_cdc_dma_be_dai_links[] = {
+	/* WSA CDC DMA Backend DAI Links */
+	{
+		.name = LPASS_BE_WSA_CDC_DMA_RX_0,
+		.stream_name = LPASS_BE_WSA_CDC_DMA_RX_0,
+		.playback_only = 1,
+		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+			SND_SOC_DPCM_TRIGGER_POST},
+		.ignore_pmdown_time = 1,
+		.ignore_suspend = 1,
+		.ops = &msm_common_be_ops,
+		SND_SOC_DAILINK_REG(left_wsa_dma_rx0),
+		.init = &msm_int_wsa_init,
+	},
+	{
+		.name = LPASS_BE_WSA_CDC_DMA_RX_1,
+		.stream_name = LPASS_BE_WSA_CDC_DMA_RX_1,
+		.playback_only = 1,
+		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+			SND_SOC_DPCM_TRIGGER_POST},
+		.ignore_pmdown_time = 1,
+		.ignore_suspend = 1,
+		.ops = &msm_common_be_ops,
+		SND_SOC_DAILINK_REG(left_wsa_dma_rx1),
+	},
+	{
+		.name = LPASS_BE_WSA_CDC_DMA_TX_1,
+		.stream_name = LPASS_BE_WSA_CDC_DMA_TX_1,
+		.capture_only = 1,
+		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+			SND_SOC_DPCM_TRIGGER_POST},
+		.ignore_suspend = 1,
+		.ops = &msm_common_be_ops,
+		SND_SOC_DAILINK_REG(left_wsa_dma_tx1),
+	},
+	{
+		.name = LPASS_BE_WSA_CDC_DMA_TX_0,
+		.stream_name = LPASS_BE_WSA_CDC_DMA_TX_0,
+		.capture_only = 1,
+		.ignore_suspend = 1,
+		.ops = &msm_common_be_ops,
+		/* .no_host_mode = SND_SOC_DAI_LINK_NO_HOST, */
+		SND_SOC_DAILINK_REG(vi_feedback),
+	},
+	{
+		.name = LPASS_BE_WSA_CDC_DMA_RX_0_VIRT,
+		.stream_name = LPASS_BE_WSA_CDC_DMA_RX_0_VIRT,
+		.playback_only = 1,
+		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+			SND_SOC_DPCM_TRIGGER_POST},
+		.ignore_pmdown_time = 1,
+		.ignore_suspend = 1,
+		.ops = &msm_common_be_ops,
+		SND_SOC_DAILINK_REG(left_wsa_dma_rx0),
+		.init = &msm_int_wsa_init,
 	},
 };
 
@@ -1412,7 +1509,8 @@ static int msm_snd_card_late_probe(struct snd_soc_card *card)
 			__func__, card->dai_link[0]);
 		return -EINVAL;
 	}
-
+	if (pdata->wcd_disabled)
+		return 0;
 	component = snd_soc_rtdcom_lookup(rtd, WCD938X_DRV_NAME);
 	if (!component) {
 		component = snd_soc_rtdcom_lookup(rtd, WCD937X_DRV_NAME);
@@ -1482,6 +1580,11 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev,
 
 			switch (pdata->wsa_max_devs) {
 			case MONO_SPEAKER:
+                memcpy(msm_waipio_dai_links + total_links,
+                    msm_left_wsa_cdc_dma_be_dai_links,
+                    sizeof(msm_left_wsa_cdc_dma_be_dai_links));
+                total_links += ARRAY_SIZE(msm_left_wsa_cdc_dma_be_dai_links);
+			break;
 			case STEREO_SPEAKER:
 				memcpy(msm_waipio_dai_links + total_links,
 					msm_wsa_cdc_dma_be_dai_links,
@@ -1670,6 +1773,9 @@ static int msm_int_wsa883x_init(struct snd_soc_pcm_runtime *rtd)
 
 		wsa883x_codec_info_create_codec_entry(pdata->codec_root,
 				component);
+
+		snd_soc_dapm_add_routes(&rtd->card->dapm, left_wsa_audio_paths,
+					ARRAY_SIZE(left_wsa_audio_paths));
 	}
 
 	/* If current platform has more than one WSA */
@@ -1686,6 +1792,9 @@ static int msm_int_wsa883x_init(struct snd_soc_pcm_runtime *rtd)
 
 		wsa883x_codec_info_create_codec_entry(pdata->codec_root,
 			component);
+
+		snd_soc_dapm_add_routes(&rtd->card->dapm, right_wsa_audio_paths,
+					ARRAY_SIZE(right_wsa_audio_paths));
 	}
 
 	if (pdata->wsa_max_devs > 2) {
@@ -1924,11 +2033,9 @@ static int msm_rx_tx_codec_init(struct snd_soc_pcm_runtime *rtd)
 	lpass_cdc_register_wake_irq(lpass_cdc_component, false);
 
 	if (pdata->wcd_disabled) {
-		lpass_cdc_set_port_map(lpass_cdc_component,
-			ARRAY_SIZE(sm_port_map_tx_plus_wsa), sm_port_map_tx_plus_wsa);
+		lpass_cdc_set_port_map(lpass_cdc_component, ARRAY_SIZE(sm_port_map), sm_port_map);
 		goto done;
 	}
-
 	component = snd_soc_rtdcom_lookup(rtd, WCD938X_DRV_NAME);
 	if (!component) {
 		component = snd_soc_rtdcom_lookup(rtd, WCD937X_DRV_NAME);
@@ -2189,12 +2296,43 @@ parse:
 	return ret;
 }
 
+static int dmic_enable_supplies(struct platform_device *pdev)
+{
+	int ret = 0;
+	struct snd_soc_card *card = platform_get_drvdata(pdev);
+	struct msm_asoc_mach_data *pdata = snd_soc_card_get_drvdata(card);
+
+	/* Parse power supplies */
+	msm_cdc_get_power_supplies(&pdev->dev, &pdata->regulator,
+				   &pdata->num_supplies);
+	if (!pdata->regulator || (pdata->num_supplies <= 0)) {
+		pr_err("%s: no power supplies defined\n", __func__);
+		return -EINVAL;
+	}
+
+	ret = msm_cdc_init_supplies(&pdev->dev, &pdata->supplies,
+				    pdata->regulator, pdata->num_supplies);
+	if (!pdata->supplies) {
+		pr_err("%s: Cannot init dmic supplies\n", __func__);
+		return ret;
+	}
+
+	ret = msm_cdc_enable_static_supplies(&pdev->dev, pdata->supplies,
+					     pdata->regulator,
+					     pdata->num_supplies);
+	if (ret)
+		pr_err("%s: dmic static supply enable failed!\n", __func__);
+
+	return ret;
+}
+
 static int msm_asoc_machine_probe(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = NULL;
 	struct msm_asoc_mach_data *pdata = NULL;
 	int ret = 0;
 	struct clk *lpass_audio_hw_vote = NULL;
+	int detect_result;
 
 	if (!pdev->dev.of_node) {
 		dev_err(&pdev->dev, "%s: No platform supplied from device tree\n", __func__);
@@ -2234,6 +2372,17 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 			__func__, ret);
 		pdata->wsa_hac_enabled = 0;
 	}
+
+	if (pdata->wsa_max_devs > 1) {
+		detect_result = wsa883x_codec_detect();
+		pr_info("%s: detect result %d\n", __func__, detect_result);
+		if (detect_result == WSA883x_CODEC2_UNKNOWN) {
+			ret = -EPROBE_DEFER;
+			goto err;
+		} else if (detect_result == WSA883x_CODEC2_NOT_DETECTED)
+			pdata->wsa_max_devs = 1;
+	}
+	pr_info("%s: wsa_max_devs %d\n", __func__, pdata->wsa_max_devs);
 
 	card = populate_snd_card_dailinks(&pdev->dev, pdata);
 	if (!card) {
@@ -2303,6 +2452,21 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	pdata->dmic67_gpio_p = of_parse_phandle(pdev->dev.of_node,
 					      "qcom,cdc-dmic67-gpios",
 					       0);
+	pdata->dmic23_en_gpio_p = of_parse_phandle(pdev->dev.of_node,
+					     "qcom,dmic23-en-gpio", 0);
+	pdata->dmic45_en_gpio_p = of_parse_phandle(pdev->dev.of_node,
+					     "qcom,dmic45-en-gpio", 0);
+	pdata->dmic_supply = of_parse_phandle(pdev->dev.of_node,
+					     "cdc-vdd-dmic1-supply", 0);
+
+	if(pdata->dmic_supply) {
+		ret = dmic_enable_supplies(pdev);
+		if (ret) {
+			ret = -EPROBE_DEFER;
+			dev_err(&pdev->dev, "%s: dmic supplies failed\n", __func__);
+		}
+	}
+
 	if (pdata->dmic01_gpio_p)
 		msm_cdc_pinctrl_set_wakeup_capable(pdata->dmic01_gpio_p, false);
 	if (pdata->dmic23_gpio_p)
@@ -2311,6 +2475,10 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 		msm_cdc_pinctrl_set_wakeup_capable(pdata->dmic45_gpio_p, false);
 	if (pdata->dmic67_gpio_p)
 		msm_cdc_pinctrl_set_wakeup_capable(pdata->dmic67_gpio_p, false);
+	if(pdata->dmic23_en_gpio_p)
+		msm_cdc_pinctrl_set_wakeup_capable(pdata->dmic23_en_gpio_p, false);
+	if (pdata->dmic45_en_gpio_p)
+		msm_cdc_pinctrl_set_wakeup_capable(pdata->dmic45_en_gpio_p, false);
 
 	msm_common_snd_init(pdev, card);
 

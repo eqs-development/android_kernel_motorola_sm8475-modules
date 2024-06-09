@@ -111,7 +111,7 @@ static const struct wsa_reg_mask_val reg_init[] = {
 	{WSA883X_VBAT_SNS, 0x60, 0x20},
 	{WSA883X_DRE_CTL_0, 0xF0, 0x90},
 	{WSA883X_DRE_IDLE_DET_CTL, 0x10, 0x00},
-	{WSA883X_CURRENT_LIMIT, 0x78, 0x40},
+	{WSA883X_CURRENT_LIMIT, 0x78, 0x06},
 	{WSA883X_DRE_CTL_0, 0x07, 0x02},
 	{WSA883X_VAGC_TIME, 0x0F, 0x0F},
 	{WSA883X_VAGC_ATTN_LVL_1_2, 0x77, 0x00},
@@ -165,6 +165,8 @@ enum {
 	WSA883X_IRQ_INT_PA_ON_ERR,
 	WSA883X_NUM_IRQS,
 };
+
+static int detect_result = WSA883x_CODEC2_UNKNOWN;
 
 static const struct regmap_irq wsa883x_irqs[WSA883X_NUM_IRQS] = {
 	REGMAP_IRQ_REG(WSA883X_IRQ_INT_SAF2WAR, 0, 0x01),
@@ -396,6 +398,51 @@ static ssize_t codec_debug_peek_write(struct file *file,
 	return rc;
 }
 
+static ssize_t codec_debug_test_write(struct file *file,
+	const char __user *ubuf, size_t cnt, loff_t *ppos)
+{
+	char lbuf[SWR_SLV_WR_BUF_LEN];
+	int rc = 0;
+	struct swr_device *pdev = NULL;
+	struct wsa883x_priv *wsa883x = NULL;
+
+	pr_info("%s: enter\n", __func__);
+	if (!file || !ppos || !ubuf)
+		return -EINVAL;
+
+	pdev = file->private_data;
+	if (!pdev)
+		return -EINVAL;
+
+	wsa883x = swr_get_dev_data(pdev);
+	if (!wsa883x)
+		return -EINVAL;
+
+	if (cnt > sizeof(lbuf) - 1)
+		return -EINVAL;
+
+	rc = copy_from_user(lbuf, ubuf, cnt);
+	if (rc)
+		return -EFAULT;
+
+	mutex_lock(&wsa883x->recovery_lock);
+	wsa883x->need_recovery = true;
+	mutex_unlock(&wsa883x->recovery_lock);
+	schedule_delayed_work(&wsa883x->recovery_work, 0);
+
+	if (wsa883x->adsp_recovery) {
+		schedule_delayed_work(&wsa883x->adsp_recovery_work, 0);
+	}
+
+	if (rc == 0)
+		rc = cnt;
+	else
+		pr_err("%s: rc = %d\n", __func__, rc);
+
+	pr_info("%s: exit, rc = %d\n", __func__, rc);
+	return rc;
+}
+
 static ssize_t codec_debug_write(struct file *file,
 	const char __user *ubuf, size_t cnt, loff_t *ppos)
 {
@@ -432,6 +479,10 @@ static ssize_t codec_debug_write(struct file *file,
 	return rc;
 }
 
+static const struct file_operations codec_debug_test_ops = {
+	.open = codec_debug_open,
+	.write = codec_debug_test_write,
+};
 static const struct file_operations codec_debug_write_ops = {
 	.open = codec_debug_open,
 	.write = codec_debug_write,
@@ -459,67 +510,130 @@ static void wsa883x_regcache_sync(struct wsa883x_priv *wsa883x)
 
 static irqreturn_t wsa883x_saf2war_handle_irq(int irq, void *data)
 {
-	pr_err_ratelimited("%s: interrupt for irq =%d triggered\n",
+	struct wsa883x_priv *wsa883x = data;
+
+	if (!wsa883x)
+		return IRQ_NONE;
+	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t wsa883x_war2saf_handle_irq(int irq, void *data)
 {
-	pr_err_ratelimited("%s: interrupt for irq =%d triggered\n",
+	struct wsa883x_priv *wsa883x = data;
+
+	if (!wsa883x)
+		return IRQ_NONE;
+	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t wsa883x_otp_handle_irq(int irq, void *data)
 {
-	pr_err_ratelimited("%s: interrupt for irq =%d triggered\n",
+	struct wsa883x_priv *wsa883x = data;
+
+	if (!wsa883x)
+		return IRQ_NONE;
+	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
 	return IRQ_HANDLED;
 }
 
+// esd
 static irqreturn_t wsa883x_ocp_handle_irq(int irq, void *data)
 {
-	pr_err_ratelimited("%s: interrupt for irq =%d triggered\n",
+	struct wsa883x_priv *wsa883x = data;
+
+	if (!wsa883x)
+		return IRQ_NONE;
+	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
+	if (wsa883x->wsa_recovery) {
+		mutex_lock(&wsa883x->recovery_lock);
+		wsa883x->need_recovery = true;
+		mutex_unlock(&wsa883x->recovery_lock);
+		schedule_delayed_work(&wsa883x->recovery_work, 0);
+	}
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t wsa883x_clip_handle_irq(int irq, void *data)
 {
-	pr_err_ratelimited("%s: interrupt for irq =%d triggered\n",
+	struct wsa883x_priv *wsa883x = data;
+
+	if (!wsa883x)
+		return IRQ_NONE;
+	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
 	return IRQ_HANDLED;
 }
 
+// esd
 static irqreturn_t wsa883x_pdm_wd_handle_irq(int irq, void *data)
 {
-	pr_err_ratelimited("%s: interrupt for irq =%d triggered\n",
+	struct wsa883x_priv *wsa883x = data;
+
+	if (!wsa883x)
+		return IRQ_NONE;
+	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
+	if (wsa883x->wsa_recovery) {
+		mutex_lock(&wsa883x->recovery_lock);
+		wsa883x->need_recovery = true;
+		mutex_unlock(&wsa883x->recovery_lock);
+
+		schedule_delayed_work(&wsa883x->recovery_work, 0);
+	}
+	if (wsa883x->adsp_recovery) {
+		schedule_delayed_work(&wsa883x->adsp_recovery_work, 0);
+	}
 	return IRQ_HANDLED;
 }
 
+// esd
 static irqreturn_t wsa883x_clk_wd_handle_irq(int irq, void *data)
 {
-	pr_err_ratelimited("%s: interrupt for irq =%d triggered\n",
+	struct wsa883x_priv *wsa883x = data;
+
+	if (!wsa883x)
+		return IRQ_NONE;
+	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
+	if (wsa883x->wsa_recovery) {
+		mutex_lock(&wsa883x->recovery_lock);
+		wsa883x->need_recovery = true;
+		mutex_unlock(&wsa883x->recovery_lock);
+
+		schedule_delayed_work(&wsa883x->recovery_work, 0);
+	}
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t wsa883x_ext_int_handle_irq(int irq, void *data)
 {
-	pr_err_ratelimited("%s: interrupt for irq =%d triggered\n",
+	struct wsa883x_priv *wsa883x = data;
+
+	if (!wsa883x)
+		return IRQ_NONE;
+	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t wsa883x_uvlo_handle_irq(int irq, void *data)
 {
-	pr_err_ratelimited("%s: interrupt for irq =%d triggered\n",
+	struct wsa883x_priv *wsa883x = data;
+
+	if (!wsa883x)
+		return IRQ_NONE;
+	dev_err_ratelimited(wsa883x->component->dev, "%s: interrupt for irq =%d triggered\n",
 			   __func__, irq);
 	return IRQ_HANDLED;
 }
 
+// esd
 static irqreturn_t wsa883x_pa_on_err_handle_irq(int irq, void *data)
 {
 	u8 pa_fsm_sta = 0, pa_fsm_err = 0;
@@ -533,14 +647,13 @@ static irqreturn_t wsa883x_pa_on_err_handle_irq(int irq, void *data)
 	if (!component)
 		return IRQ_NONE;
 
+	dev_err_ratelimited(component->dev, "%s: interrupt for irq =%d triggered\n",
+        __func__, irq);
 	pa_fsm_sta = (snd_soc_component_read(component, WSA883X_PA_FSM_STA)
 			& 0x70);
 	if (pa_fsm_sta)
 		pa_fsm_err = snd_soc_component_read(component,
 					WSA883X_PA_FSM_ERR_COND);
-
-	pr_err_ratelimited("%s: interrupt for irq =%d triggered\n",
-			   __func__, irq);
 
 	snd_soc_component_update_bits(component, WSA883X_PA_FSM_CTL,
 				0x10, 0x00);
@@ -548,7 +661,13 @@ static irqreturn_t wsa883x_pa_on_err_handle_irq(int irq, void *data)
 				0x10, 0x10);
 	snd_soc_component_update_bits(component, WSA883X_PA_FSM_CTL,
 				0x10, 0x00);
+	if (wsa883x->wsa_recovery) {
+		mutex_lock(&wsa883x->recovery_lock);
+		wsa883x->need_recovery = true;
+		mutex_unlock(&wsa883x->recovery_lock);
 
+		schedule_delayed_work(&wsa883x->recovery_work, 0);
+	}
 	return IRQ_HANDLED;
 }
 
@@ -755,6 +874,12 @@ static ssize_t wsa883x_variant_read(struct snd_info_entry *entry,
 static struct snd_info_entry_ops wsa883x_variant_ops = {
 	.read = wsa883x_variant_read,
 };
+
+int wsa883x_codec_detect(void)
+{
+	return detect_result;
+}
+EXPORT_SYMBOL(wsa883x_codec_detect);
 
 /*
  * wsa883x_codec_info_create_codec_entry - creates wsa883x module
@@ -1000,6 +1125,36 @@ static int wsa883x_put_ext_vdd_spk(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int wsa883x_get_pa_disable(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component =
+				snd_soc_kcontrol_component(kcontrol);
+	struct wsa883x_priv *wsa883x = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = wsa883x->pa_disable;
+
+	return 0;
+}
+
+static int wsa883x_put_pa_disable(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component =
+				snd_soc_kcontrol_component(kcontrol);
+	struct wsa883x_priv *wsa883x = snd_soc_component_get_drvdata(component);
+	int value = ucontrol->value.integer.value[0];
+
+	dev_dbg(component->dev, "%s: pa disable status %d\n", __func__, value);
+	wsa883x->pa_disable = value;
+	if (wsa883x->pa_disable && test_bit(SPKR_STATUS, &wsa883x->status_mask))
+		snd_soc_component_update_bits(wsa883x->component,
+				WSA883X_PA_FSM_CTL,
+				0x01, 0x00);
+
+	return 0;
+}
+
 static const struct snd_kcontrol_new wsa883x_snd_controls[] = {
 	SOC_ENUM_EXT("WSA PA Gain", wsa_pa_gain_enum,
 		     wsa_pa_gain_get, wsa_pa_gain_put),
@@ -1027,6 +1182,9 @@ static const struct snd_kcontrol_new wsa883x_snd_controls[] = {
 
 	SOC_SINGLE_EXT("External VDD_SPK", SND_SOC_NOPM, 0, 1, 0,
 		wsa883x_get_ext_vdd_spk, wsa883x_put_ext_vdd_spk),
+
+	SOC_SINGLE_EXT("WSA PA Disable", SND_SOC_NOPM, 0, 1, 0,
+		wsa883x_get_pa_disable, wsa883x_put_pa_disable),
 };
 
 static const struct snd_kcontrol_new swr_dac_port[] = {
@@ -1075,13 +1233,12 @@ static int wsa883x_enable_swr_dac_port(struct snd_soc_dapm_widget *w,
 			ch_rate[num_port] = SWR_CLK_RATE_4P8MHZ;
 		++num_port;
 
-		if (wsa883x->comp_enable) {
-			wsa883x_set_port(component, SWR_COMP_PORT,
-					&port_id[num_port], &num_ch[num_port],
-					&ch_mask[num_port], &ch_rate[num_port],
-					&port_type[num_port]);
-			++num_port;
-		}
+		wsa883x_set_port(component, SWR_COMP_PORT,
+				&port_id[num_port], &num_ch[num_port],
+				&ch_mask[num_port], &ch_rate[num_port],
+				&port_type[num_port]);
+		++num_port;
+
 		if (wsa883x->visense_enable) {
 			wsa883x_set_port(component, SWR_VISENSE_PORT,
 					&port_id[num_port], &num_ch[num_port],
@@ -1103,13 +1260,12 @@ static int wsa883x_enable_swr_dac_port(struct snd_soc_dapm_widget *w,
 				&port_type[num_port]);
 		++num_port;
 
-		if (wsa883x->comp_enable) {
-			wsa883x_set_port(component, SWR_COMP_PORT,
-					&port_id[num_port], &num_ch[num_port],
-					&ch_mask[num_port], &ch_rate[num_port],
-					&port_type[num_port]);
-			++num_port;
-		}
+		wsa883x_set_port(component, SWR_COMP_PORT,
+				&port_id[num_port], &num_ch[num_port],
+				&ch_mask[num_port], &ch_rate[num_port],
+				&port_type[num_port]);
+		++num_port;
+
 		if (wsa883x->visense_enable) {
 			wsa883x_set_port(component, SWR_VISENSE_PORT,
 					&port_id[num_port], &num_ch[num_port],
@@ -1201,11 +1357,15 @@ static int wsa883x_spkr_event(struct snd_soc_dapm_widget *w,
 		if (test_bit(SPKR_ADIE_LB, &wsa883x->status_mask))
 			snd_soc_component_update_bits(component,
 				WSA883X_PA_FSM_CTL, 0x01, 0x01);
+
+		wsa883x->playing = true;
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
-		if (!test_bit(SPKR_ADIE_LB, &wsa883x->status_mask))
+		if (!test_bit(SPKR_ADIE_LB, &wsa883x->status_mask)) {
 			wcd_disable_irq(&wsa883x->irq_info,
 					WSA883X_IRQ_INT_PDM_WD);
+			clear_bit(WSA883X_IRQ_INT_PDM_WD, &wsa883x->irq_enabled);
+		}
 		snd_soc_component_update_bits(component,
 				WSA883X_VBAT_ADC_FLT_CTL,
 				0x01, 0x00);
@@ -1231,6 +1391,7 @@ static int wsa883x_spkr_event(struct snd_soc_dapm_widget *w,
 		wcd_disable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_PA_ON_ERR);
 		clear_bit(SPKR_STATUS, &wsa883x->status_mask);
 		clear_bit(SPKR_ADIE_LB, &wsa883x->status_mask);
+		wsa883x->playing = false;
 		break;
 	}
 	return 0;
@@ -1414,6 +1575,242 @@ static int wsa883x_get_temperature(struct snd_soc_component *component,
 
 	return ret;
 }
+extern ssize_t adsp_ssr_store(struct kobject *kobj,
+	struct kobj_attribute *attr,
+	const char *buf, size_t count);
+
+static void wsa883x_recovery_adsp_work(struct work_struct *work)
+{
+	struct wsa883x_priv *wsa883x = NULL;
+	struct delayed_work *dwork;
+	struct snd_soc_component *component;
+	const char *buf = "1";
+
+	dwork = to_delayed_work(work);
+	wsa883x = container_of(dwork, struct wsa883x_priv, adsp_recovery_work);
+	component = wsa883x->component;
+
+	dev_info(component->dev, "%s: enter\n", __func__);
+	adsp_ssr_store(NULL, NULL, buf, 0);
+}
+static void wsa883x_recovery_work(struct work_struct *work)
+{
+	struct wsa883x_priv *wsa883x = NULL;
+	struct delayed_work *dwork;
+	struct snd_soc_component *component;
+	u8 port_id[WSA883X_MAX_SWR_PORTS];
+	u8 num_ch[WSA883X_MAX_SWR_PORTS];
+	u8 ch_mask[WSA883X_MAX_SWR_PORTS];
+	u32 ch_rate[WSA883X_MAX_SWR_PORTS];
+	u8 port_type[WSA883X_MAX_SWR_PORTS];
+	u8 num_port = 0;
+	bool need_recovery = false;
+
+	dwork = to_delayed_work(work);
+	wsa883x = container_of(dwork, struct wsa883x_priv, recovery_work);
+	component = wsa883x->component;
+
+	dev_info(component->dev, "%s: enter\n", __func__);
+
+	mutex_lock(&wsa883x->recovery_lock);
+	need_recovery = wsa883x->need_recovery;
+	wsa883x->need_recovery = false;
+	mutex_unlock(&wsa883x->recovery_lock);
+
+	if (!need_recovery || !wsa883x->playing) {
+		dev_info(component->dev, "%s: not need recovery\n", __func__);
+		goto exit;
+	}
+
+	dev_info(component->dev, "%s: start to recovery\n", __func__);
+
+	mutex_lock(&wsa883x->res_lock);
+	// SND_SOC_DAPM_PRE_PMD: spkr_event
+	if (!test_bit(SPKR_ADIE_LB, &wsa883x->status_mask)) {
+		wcd_disable_irq(&wsa883x->irq_info,
+				WSA883X_IRQ_INT_PDM_WD);
+		clear_bit(WSA883X_IRQ_INT_PDM_WD, &wsa883x->irq_enabled);
+	}
+	snd_soc_component_update_bits(component,
+			WSA883X_VBAT_ADC_FLT_CTL,
+			0x01, 0x00);
+	snd_soc_component_update_bits(component,
+			WSA883X_VBAT_ADC_FLT_CTL,
+			0x0E, 0x00);
+	snd_soc_component_update_bits(component, WSA883X_PA_FSM_CTL,
+			0x01, 0x00);
+	snd_soc_component_update_bits(component, WSA883X_PA_FSM_CTL,
+			0x10, 0x00);
+	snd_soc_component_update_bits(component, WSA883X_PA_FSM_CTL,
+			0x10, 0x10);
+	snd_soc_component_update_bits(component, WSA883X_PA_FSM_CTL,
+			0x10, 0x00);
+	snd_soc_component_update_bits(component, WSA883X_PDM_WD_CTL,
+			0x01, 0x00);
+	wcd_disable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_CLK_WD);
+	wcd_disable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_OCP);
+	wcd_disable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_DISABLE);
+	wcd_disable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_WAR2SAF);
+	wcd_disable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_SAF2WAR);
+	wcd_disable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_UVLO);
+	wcd_disable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_PA_ON_ERR);
+	clear_bit(SPKR_STATUS, &wsa883x->status_mask);
+	clear_bit(SPKR_ADIE_LB, &wsa883x->status_mask);
+
+	// SND_SOC_DAPM_PRE_PMD: dac_port
+	wsa883x_set_port(component, SWR_DAC_PORT,
+			&port_id[num_port], &num_ch[num_port],
+			&ch_mask[num_port], &ch_rate[num_port],
+			&port_type[num_port]);
+	++num_port;
+
+	if (wsa883x->comp_enable) {
+		wsa883x_set_port(component, SWR_COMP_PORT,
+				&port_id[num_port], &num_ch[num_port],
+				&ch_mask[num_port], &ch_rate[num_port],
+				&port_type[num_port]);
+		++num_port;
+	}
+	if (wsa883x->visense_enable) {
+		wsa883x_set_port(component, SWR_VISENSE_PORT,
+				&port_id[num_port], &num_ch[num_port],
+				&ch_mask[num_port], &ch_rate[num_port],
+				&port_type[num_port]);
+		++num_port;
+	}
+	swr_disconnect_port(wsa883x->swr_slave, &port_id[0], num_port,
+			&ch_mask[0], &port_type[0]);
+
+	// SND_SOC_DAPM_POST_PMD:  dac_port
+	if (swr_set_device_group(wsa883x->swr_slave, SWR_GROUP_NONE))
+		dev_err(component->dev,
+			"%s: set num ch failed\n", __func__);
+
+	swr_slvdev_datapath_control(wsa883x->swr_slave,
+					wsa883x->swr_slave->dev_num,
+					false);
+
+	msleep(100);
+
+	num_port = 0;
+	// SND_SOC_DAPM_PRE_PMU: dac_port
+	wsa883x_set_port(component, SWR_DAC_PORT,
+			&port_id[num_port], &num_ch[num_port],
+			&ch_mask[num_port], &ch_rate[num_port],
+			&port_type[num_port]);
+	if (wsa883x->dev_mode == RECEIVER)
+		ch_rate[num_port] = SWR_CLK_RATE_4P8MHZ;
+	++num_port;
+
+	if (wsa883x->comp_enable) {
+		wsa883x_set_port(component, SWR_COMP_PORT,
+				&port_id[num_port], &num_ch[num_port],
+				&ch_mask[num_port], &ch_rate[num_port],
+				&port_type[num_port]);
+		++num_port;
+	}
+	if (wsa883x->visense_enable) {
+		wsa883x_set_port(component, SWR_VISENSE_PORT,
+				&port_id[num_port], &num_ch[num_port],
+				&ch_mask[num_port], &ch_rate[num_port],
+				&port_type[num_port]);
+		++num_port;
+	}
+	swr_connect_port(wsa883x->swr_slave, &port_id[0], num_port,
+			&ch_mask[0], &ch_rate[0], &num_ch[0],
+				&port_type[0]);
+
+	//SND_SOC_DAPM_POST_PMU:  dac_port
+	set_bit(SPKR_STATUS, &wsa883x->status_mask);
+
+	// SND_SOC_DAPM_POST_PMU: spkr_event
+	if (wsa883x->dev_mode == RECEIVER) {
+		snd_soc_component_update_bits(component,
+					WSA883X_CDC_PATH_MODE,
+					0x02, 0x02);
+		snd_soc_component_update_bits(component,
+					WSA883X_SPKR_PWM_CLK_CTL,
+					0x08, 0x08);
+		snd_soc_component_update_bits(component,
+					WSA883X_DRE_CTL_0,
+					0xF0, 0x00);
+	} else if (wsa883x->dev_mode == SPEAKER) {
+		snd_soc_component_update_bits(component,
+					WSA883X_CDC_PATH_MODE,
+					0x02, 0x00);
+		snd_soc_component_update_bits(component,
+					WSA883X_SPKR_PWM_CLK_CTL,
+					0x08, 0x00);
+		snd_soc_component_update_bits(component,
+					WSA883X_DRE_CTL_0,
+					0xF0, 0x90);
+	}
+	swr_slvdev_datapath_control(wsa883x->swr_slave,
+					wsa883x->swr_slave->dev_num,
+					true);
+	/* Added delay as per HW sequence */
+	usleep_range(250, 300);
+	snd_soc_component_update_bits(component,
+				WSA883X_DRE_CTL_1,
+				0x01, 0x01);
+	/* Added delay as per HW sequence */
+	usleep_range(250, 300);
+
+	/* Force remove group */
+	swr_remove_from_group(wsa883x->swr_slave,
+				  wsa883x->swr_slave->dev_num);
+	if (wsa883x->comp_enable)
+		snd_soc_component_update_bits(component,
+					WSA883X_DRE_CTL_0,
+					0x07,
+					wsa883x->comp_offset);
+	wcd_enable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_PA_ON_ERR);
+	wcd_enable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_UVLO);
+	wcd_enable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_SAF2WAR);
+	wcd_enable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_WAR2SAF);
+	wcd_enable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_DISABLE);
+	wcd_enable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_OCP);
+	wcd_enable_irq(&wsa883x->irq_info, WSA883X_IRQ_INT_CLK_WD);
+	snd_soc_component_update_bits(component,
+			WSA883X_VBAT_ADC_FLT_CTL,
+			0x0E, 0x06);
+	snd_soc_component_update_bits(component,
+			WSA883X_VBAT_ADC_FLT_CTL,
+			0x01, 0x01);
+	if (test_bit(SPKR_ADIE_LB, &wsa883x->status_mask))
+		snd_soc_component_update_bits(component,
+			WSA883X_PA_FSM_CTL, 0x01, 0x01);
+
+	// BOLERO_SLV_EVT_PA_ON_POST_FSCLK:
+	if (test_bit(SPKR_STATUS, &wsa883x->status_mask)) {
+		snd_soc_component_update_bits(wsa883x->component,
+					WSA883X_PDM_WD_CTL,
+					0x01, 0x01);
+		snd_soc_component_update_bits(wsa883x->component,
+					WSA883X_PA_FSM_CTL,
+					0x01, 0x01);
+		if (!test_bit(WSA883X_IRQ_INT_PDM_WD, &wsa883x->irq_enabled)) {
+			wcd_enable_irq(&wsa883x->irq_info,
+					WSA883X_IRQ_INT_PDM_WD);
+			set_bit(WSA883X_IRQ_INT_PDM_WD, &wsa883x->irq_enabled);
+		}
+		/* Added delay as per HW sequence */
+		usleep_range(3000, 3100);
+		if (wsa883x->comp_enable) {
+			snd_soc_component_update_bits(wsa883x->component,
+					WSA883X_DRE_CTL_1,
+					0x01, 0x00);
+			/* Added delay as per HW sequence */
+			usleep_range(5000, 5050);
+		}
+	}
+	mutex_unlock(&wsa883x->res_lock);
+
+exit:
+	if (wsa883x->playing)
+		schedule_delayed_work(&wsa883x->recovery_work, msecs_to_jiffies(5000));
+	dev_info(component->dev, "%s: exit\n", __func__);
+}
 
 static int wsa883x_codec_probe(struct snd_soc_component *component)
 {
@@ -1446,6 +1843,7 @@ static int wsa883x_codec_probe(struct snd_soc_component *component)
 	wsa883x->comp_offset = COMP_OFFSET2;
 	wsa883x_codec_init(component);
 	wsa883x->global_pa_cnt = 0;
+	wsa883x->pa_disable = 0;
 
 	memset(w_name, 0, sizeof(w_name));
 	strlcpy(w_name, wsa883x->dai_driver->playback.stream_name,
@@ -1465,6 +1863,10 @@ static int wsa883x_codec_probe(struct snd_soc_component *component)
 	snd_soc_dapm_ignore_suspend(dapm, w_name);
 
 	snd_soc_dapm_sync(dapm);
+
+	wsa883x->playing = false;
+	INIT_DELAYED_WORK(&wsa883x->recovery_work, wsa883x_recovery_work);
+	INIT_DELAYED_WORK(&wsa883x->adsp_recovery_work, wsa883x_recovery_adsp_work);
 
 	return 0;
 }
@@ -1584,6 +1986,7 @@ static int wsa883x_event_notify(struct notifier_block *nb,
 	if (!wsa883x)
 		return -EINVAL;
 
+	dev_dbg(wsa883x->dev, "%s: event %d, wsa883x->comp_enable %d\n", __func__, event, wsa883x->comp_enable);
 	switch (event) {
 	case BOLERO_SLV_EVT_PA_OFF_PRE_SSR:
 		if (test_bit(SPKR_STATUS, &wsa883x->status_mask))
@@ -1608,14 +2011,25 @@ static int wsa883x_event_notify(struct notifier_block *nb,
 			snd_soc_component_update_bits(wsa883x->component,
 						WSA883X_PA_FSM_CTL,
 						0x01, 0x01);
-			wcd_enable_irq(&wsa883x->irq_info,
-					WSA883X_IRQ_INT_PDM_WD);
+			if (!test_bit(WSA883X_IRQ_INT_PDM_WD, &wsa883x->irq_enabled)) {
+				wcd_enable_irq(&wsa883x->irq_info,
+						WSA883X_IRQ_INT_PDM_WD);
+				set_bit(WSA883X_IRQ_INT_PDM_WD, &wsa883x->irq_enabled);
+			}
 			/* Added delay as per HW sequence */
 			usleep_range(3000, 3100);
 			if (wsa883x->comp_enable) {
 				snd_soc_component_update_bits(wsa883x->component,
 						WSA883X_DRE_CTL_1,
 						0x01, 0x00);
+				/* Added delay as per HW sequence */
+				usleep_range(5000, 5000);
+			} else {
+				/* Added delay as per HW sequence */
+				usleep_range(3000, 3100);
+				snd_soc_component_update_bits(wsa883x->component,
+						WSA883X_DRE_CTL_1,
+						0x01, 0x01);
 				/* Added delay as per HW sequence */
 				usleep_range(5000, 5050);
 			}
@@ -1630,7 +2044,7 @@ static int wsa883x_event_notify(struct notifier_block *nb,
 			__func__, event);
 		break;
 	}
-
+	dev_dbg(wsa883x->dev, "%s: exit\n", __func__);
 	return 0;
 }
 
@@ -1680,6 +2094,8 @@ static struct snd_soc_dai_driver wsa_dai[] = {
 	},
 };
 
+#define WSA_PROBE_TRY_DETECT_COUNT  2
+
 static int wsa883x_swr_probe(struct swr_device *pdev)
 {
 	int ret = 0, i = 0;
@@ -1690,6 +2106,8 @@ static int wsa883x_swr_probe(struct swr_device *pdev)
 	struct snd_soc_component *component;
 	char buffer[MAX_NAME_LEN];
 	int dev_index = 0;
+	u32 val = 0;
+
 	struct regmap_irq_chip *wsa883x_sub_regmap_irq_chip = NULL;
 
 	wsa883x = devm_kzalloc(&pdev->dev, sizeof(struct wsa883x_priv),
@@ -1709,6 +2127,15 @@ static int wsa883x_swr_probe(struct swr_device *pdev)
 		ret = -EPROBE_DEFER;
 		goto err;
 	}
+	ret = of_property_read_u32(pdev->dev.of_node,
+				"qcom,wsa-recovery-enabled", &val);
+	wsa883x->wsa_recovery = val;
+	dev_info(&pdev->dev, "%s: wsa-recovery enabled %d\n", __func__, wsa883x->wsa_recovery);
+
+	ret = of_property_read_u32(pdev->dev.of_node,
+				"qcom,wsa-adsp-recovery-enabled", &val);
+	wsa883x->adsp_recovery = val;
+	dev_info(&pdev->dev, "%s: wsa-adsp-recovery enabled %d\n", __func__, wsa883x->adsp_recovery);
 
 	wsa883x->wsa_rst_np = of_parse_phandle(pdev->dev.of_node,
 					     "qcom,spkr-sd-n-node", 0);
@@ -1729,12 +2156,23 @@ static int wsa883x_swr_probe(struct swr_device *pdev)
 	usleep_range(5000, 5010);
 	ret = swr_get_logical_dev_num(pdev, pdev->addr, &devnum);
 	if (ret) {
-		dev_dbg(&pdev->dev,
-			"%s get devnum %d for dev addr %lx failed\n",
-			__func__, devnum, pdev->addr);
+		static int wsa2_detect_count = 0;
+		dev_warn(&pdev->dev,
+			"%s get devnum %d for dev addr %lx failed, ret = %d\n",
+			__func__, devnum, pdev->addr, ret);
 		ret = -EPROBE_DEFER;
+		if (((char)(pdev->addr & 0xF)) == 0x2) {
+			wsa2_detect_count++;
+			if (wsa2_detect_count >= WSA_PROBE_TRY_DETECT_COUNT) {
+				detect_result = WSA883x_CODEC2_NOT_DETECTED;
+				ret = -EIO;
+			}
+		}
 		goto err_supply;
 	}
+	if (((char)(pdev->addr & 0xF)) == 0x2)
+		detect_result = WSA883x_CODEC2_DETECTED;
+
 	pdev->dev_num = devnum;
 
 	wsa883x->regmap = devm_regmap_init_swr(pdev,
@@ -1764,6 +2202,7 @@ static int wsa883x_swr_probe(struct swr_device *pdev)
 			__func__, ret);
 		goto dev_err;
 	}
+	wsa883x->swr_slave->slave_irq = wsa883x->virq;
 
 	wsa883x->swr_slave->slave_irq = wsa883x->virq;
 
@@ -1899,6 +2338,7 @@ static int wsa883x_swr_probe(struct swr_device *pdev)
 	}
 
 	mutex_init(&wsa883x->res_lock);
+	mutex_init(&wsa883x->recovery_lock);
 
 #ifdef CONFIG_DEBUG_FS
 	if (!wsa883x->debugfs_dent) {
@@ -1919,6 +2359,13 @@ static int wsa883x_swr_probe(struct swr_device *pdev)
 				(void *) pdev,
 				&codec_debug_write_ops);
 
+		wsa883x->debugfs_wsa_test =
+				debugfs_create_file("wsa_test",
+				S_IFREG | 0444,
+				wsa883x->debugfs_dent,
+				(void *) pdev,
+				&codec_debug_test_ops);
+
 		wsa883x->debugfs_reg_dump =
 				debugfs_create_file(
 				"swrslave_reg_dump",
@@ -1929,7 +2376,6 @@ static int wsa883x_swr_probe(struct swr_device *pdev)
 	}
 }
 #endif
-
 	return 0;
 
 err_mem:
@@ -1996,6 +2442,7 @@ static int wsa883x_swr_remove(struct swr_device *pdev)
 	wsa883x->debugfs_dent = NULL;
 #endif
 	mutex_destroy(&wsa883x->res_lock);
+	mutex_destroy(&wsa883x->recovery_lock);
 	snd_soc_unregister_component(&pdev->dev);
 	if (wsa883x->dai_driver) {
 		kfree(wsa883x->dai_driver->name);

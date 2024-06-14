@@ -1,6 +1,6 @@
 # add -Wall to try to catch everything we can.
 EXTRA_CFLAGS += -Wall
-EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/modules/include
+EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/include
 
 obj-m += watchdogtest.o
 KBUILD_EXTRA_SYMBOLS += $(KBUILD_OUTPUT)/Module.symvers

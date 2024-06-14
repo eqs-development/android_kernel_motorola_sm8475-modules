@@ -1,6 +1,6 @@
 # add -Wall to try to catch everything we can.
 EXTRA_CFLAGS += -Wall
-EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/modules/include
+EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/include
 EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/drivers/power/sm5602_fg_mmi
 
 sm5602_fg_mmi-objs += sm5602_fg.o

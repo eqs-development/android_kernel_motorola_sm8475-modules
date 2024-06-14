@@ -1,6 +1,6 @@
 # add -Wall to try to catch everything we can.
 EXTRA_CFLAGS += -Wall
-EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/modules/drivers/power/mmi_charger
+EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/drivers/power/mmi_charger
 
 obj-m += ext_charger.o
 

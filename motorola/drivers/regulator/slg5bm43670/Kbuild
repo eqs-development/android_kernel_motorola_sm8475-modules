@@ -1,5 +1,5 @@
 EXTRA_CFLAGS += -Wall
-EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/modules/include
+EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/include
 
 slg5bm43670-objs += slg5bm43670-regulator.o
 obj-m	+= slg5bm43670.o

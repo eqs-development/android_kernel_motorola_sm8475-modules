@@ -1,3 +1,11 @@
+ifneq ($(findstring bronco, $(TARGET_PRODUCT)), )
+    KBUILD_OPTIONS += CONFIG_WIRELESS_CPS4035B=m
+else ifneq ($(findstring eqs, $(TARGET_PRODUCT)), )
+    KBUILD_OPTIONS += CONFIG_WIRELESS_CPS4035B=m
+else ifneq ($(findstring zeekr, $(TARGET_PRODUCT)), )
+    KBUILD_OPTIONS += CONFIG_WIRELESS_CPS4019=m
+endif
+
 all: modules
 
 modules:

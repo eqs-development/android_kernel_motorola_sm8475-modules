@@ -1,6 +1,6 @@
 # add -Wall to try to catch everything we can.
 EXTRA_CFLAGS += -Wall
-EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/modules/include
+EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/include
 
 ifneq ($(filter m y, $(CONFIG_PANEL_NOTIFICATIONS)),)
 	EXTRA_CFLAGS += -DCONFIG_PANEL_NOTIFICATIONS

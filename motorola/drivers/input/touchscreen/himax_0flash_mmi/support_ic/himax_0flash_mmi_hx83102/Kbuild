@@ -1,9 +1,9 @@
 # add -Wall to try to catch everything we can.
 EXTRA_CFLAGS += -Wall
-EXTRA_CFLAGS += -I$(TOP)/motorola/kernel/modules/include \
-		-I$(TOP)/motorola/kernel/modules/drivers/input/touchscreen/himax_0flash_mmi \
-		-I$(TOP)/motorola/kernel/modules/drivers/input/touchscreen/himax_0flash_mmi/support_ic \
-		-I$(TOP)/motorola/kernel/modules/drivers/input/touchscreen/himax_0flash_mmi/support_ic/himax_0flash_mmi_hx83102
+EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/include \
+		-I$(KERNEL_SRC)/../sm8475-modules/motorola/drivers/input/touchscreen/himax_0flash_mmi \
+		-I$(KERNEL_SRC)/../sm8475-modules/motorola/drivers/input/touchscreen/himax_0flash_mmi/support_ic \
+		-I$(KERNEL_SRC)/../sm8475-modules/motorola/drivers/input/touchscreen/himax_0flash_mmi/support_ic/himax_0flash_mmi_hx83102
 EXTRA_CFLAGS += -DCONFIG_TOUCHSCREEN_HIMAX_DEBUG \
 		-DCONFIG_TOUCHSCREEN_HIMAX_INSPECT
 

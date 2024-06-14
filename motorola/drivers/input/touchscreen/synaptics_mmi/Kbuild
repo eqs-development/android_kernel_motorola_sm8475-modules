@@ -1,7 +1,7 @@
 # add -Wall to try to catch everything we can.
 EXTRA_CFLAGS += -Wall
-EXTRA_CFLAGS += -I$(TOP)/motorola/kernel/modules/include \
-		-I$(TOP)/motorola/kernel/modules/drivers/input/touchscreen/synaptics_mmi
+EXTRA_CFLAGS += -I$(KERNEL_SRC)/../sm8475-modules/motorola/include \
+		-I$(KERNEL_SRC)/../sm8475-modules/motorola/drivers/input/touchscreen/synaptics_mmi
 
 synaptics_mmi-objs = synaptics_dsx_i2c.o
 

@@ -1095,8 +1095,8 @@ static int egisfp_fb_callback(struct notifier_block *nb, unsigned long val, void
 {
 	struct egisfp_dev_t *egis_dev = NULL;
 	char *envp[2];
-	int ret = 0;
 #if defined(CONFIG_PANEL_NOTIFICATIONS)
+	int ret = 0;
 	INFO_PRINT(" %s : got notify value = %d \n", __func__, (int)val);
 	egis_dev = container_of(nb, struct egisfp_dev_t, notifier);
 	egis_dev->screen_onoff = 1;
@@ -1149,7 +1149,7 @@ static int egisfp_fb_callback(struct notifier_block *nb, unsigned long val, void
 	}
 	INFO_PRINT(" %s : screen_onoff = %d \n", __func__, egis_dev->screen_onoff);
 	envp[1] = NULL;
-	ret = kobject_uevent_env(&egis_dev->dd->dev.kobj, KOBJ_CHANGE, envp);
+	kobject_uevent_env(&egis_dev->dd->dev.kobj, KOBJ_CHANGE, envp);
 #else
 	struct fb_event *evdata = data;
 	unsigned int blank;
@@ -1176,7 +1176,7 @@ static int egisfp_fb_callback(struct notifier_block *nb, unsigned long val, void
 		}
 		INFO_PRINT(" %s : screen_onoff = %d \n", __func__, egis_dev->screen_onoff);
 		envp[1] = NULL;
-		ret = kobject_uevent_env(&egis_dev->dd->dev.kobj, KOBJ_CHANGE, envp);
+		kobject_uevent_env(&egis_dev->dd->dev.kobj, KOBJ_CHANGE, envp);
 	}
 #endif
 	return NOTIFY_OK;

@@ -452,7 +452,7 @@ static int mot_actuator_init_runtime(void)
 	return 0;
 }
 
-static mot_actuator_uninit_runtime(void)
+static int mot_actuator_uninit_runtime(void)
 {
 	int i;
 	int regIdx;

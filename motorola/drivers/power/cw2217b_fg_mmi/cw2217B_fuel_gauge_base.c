@@ -1086,10 +1086,8 @@ static int cw_battery_set_property(struct power_supply *psy,
 				const union power_supply_propval *val)
 {
 	int ret = 0;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
 	struct cw_battery *cw_bat;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 1, 0)
-	cw_bat = container_of(psy, struct cw_battery, cw_bat);
-#else
 	cw_bat = power_supply_get_drvdata(psy);
 #endif
 

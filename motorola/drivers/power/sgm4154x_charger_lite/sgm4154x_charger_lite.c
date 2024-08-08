@@ -1377,7 +1377,6 @@ static bool sgm4154x_dpdm_detect_is_done(struct sgm4154x_device * sgm)
 
 static void charger_monitor_work_func(struct work_struct *work)
 {
-	int ret = 0;
 	//static u8 last_chg_method = 0;
 	bool state_changed = false;
 	struct sgm4154x_state state;
@@ -1385,7 +1384,7 @@ static void charger_monitor_work_func(struct work_struct *work)
 					struct sgm4154x_device,
 					charge_monitor_work.work);
 
-	ret = sgm4154x_get_state(sgm, &state);
+	sgm4154x_get_state(sgm, &state);
 	state_changed = sgm4154x_state_changed(sgm, &state);
 	mutex_lock(&sgm->lock);
 	sgm->state = state;
@@ -2260,9 +2259,8 @@ static int sgm4154x_is_enabled_vbus(struct regulator_dev *rdev)
 {
 	struct sgm4154x_device *sgm = rdev_get_drvdata(rdev);
 	int temp = 0;
-	int ret = 0;
 
-	ret = regmap_read(sgm->regmap, SGM4154x_CHRG_CTRL_1, &temp);
+	regmap_read(sgm->regmap, SGM4154x_CHRG_CTRL_1, &temp);
 	return (temp&SGM4154x_OTG_EN)? 1 : 0;
 }
 
@@ -3397,7 +3395,6 @@ static int sgm4154x_probe(struct i2c_client *client,
 	struct device *dev = &client->dev;
 	struct sgm4154x_device *sgm;
 	int ret;
-	int otg_notify;
 	char *name = NULL;
 
 	sgm = devm_kzalloc(dev, sizeof(*sgm), GFP_KERNEL);
@@ -3454,14 +3451,14 @@ static int sgm4154x_probe(struct i2c_client *client,
 	if (!IS_ERR_OR_NULL(sgm->usb2_phy)) {
 		INIT_WORK(&sgm->usb_work, sgm4154x_usb_work);
 		sgm->usb_nb.notifier_call = sgm4154x_usb_notifier;
-		otg_notify = usb_register_notifier(sgm->usb2_phy, &sgm->usb_nb);
+		usb_register_notifier(sgm->usb2_phy, &sgm->usb_nb);
 	}
 
 	sgm->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
 	if (!IS_ERR_OR_NULL(sgm->usb3_phy)) {
 		INIT_WORK(&sgm->usb_work, sgm4154x_usb_work);
 		sgm->usb_nb.notifier_call = sgm4154x_usb_notifier;
-		otg_notify = usb_register_notifier(sgm->usb3_phy, &sgm->usb_nb);
+		usb_register_notifier(sgm->usb3_phy, &sgm->usb_nb);
 	}
 
 	INIT_DELAYED_WORK(&sgm->charge_detect_delayed_work, charger_detect_work_func);

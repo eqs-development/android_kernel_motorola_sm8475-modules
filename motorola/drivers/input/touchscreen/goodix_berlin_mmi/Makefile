@@ -9,6 +9,10 @@ ifneq ($(findstring zeekr, $(TARGET_PRODUCT)), )
     KBUILD_OPTIONS += CONFIG_TOUCHSCREEN_GOODIX_BRL_SPI=y
 endif
 
+ifneq ($(findstring bronco, $(TARGET_PRODUCT)), )
+    KBUILD_OPTIONS += CONFIG_TOUCHSCREEN_GOODIX_BRL_SPI=y
+endif
+
 all: modules
 
 modules:

@@ -1349,6 +1349,7 @@ end:
 	return rc;
 };
 
+#if 0
 static bool dsi_panel_lhbm_not_allowed_list(struct dsi_panel *panel)
 {
 	int i;
@@ -1390,6 +1391,7 @@ static int dsi_panel_lhbm_waitfor_fps_valid(struct dsi_panel *panel)
 	}
 	return 0;
 }
+#endif
 
 void update_hbm_cmd_bronco(struct dsi_panel *panel,
                         struct msm_param_info *param_info)
@@ -1444,8 +1446,10 @@ static int dsi_panel_set_hbm(struct dsi_panel *panel,
 		dsi_panel_set_local_hbm_param(panel, param_info, lhbm_config);
 	}
 
+#if 0
 	if (panel->lhbm_config.lhbm_wait_for_fps_valid && param_info->value == HBM_FOD_ON_STATE)
 		dsi_panel_lhbm_waitfor_fps_valid(panel);
+#endif
 
 	rc = dsi_panel_send_param_cmd(panel, param_info);
 	if (rc < 0) {

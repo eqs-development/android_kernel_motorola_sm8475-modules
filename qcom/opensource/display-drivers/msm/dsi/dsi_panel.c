@@ -1183,7 +1183,7 @@ error:
 	return rc;
 }
 
-static int dsi_panel_send_param_cmd(struct dsi_panel *panel,
+static int _dsi_panel_send_param_cmd(struct dsi_panel *panel,
                                 struct msm_param_info *param_info)
 {
 	int rc = 0;
@@ -1202,8 +1202,6 @@ static int dsi_panel_send_param_cmd(struct dsi_panel *panel,
 	DSI_INFO("%s: param_name=%s; val_max =%d, default_value=%d, value=%d\n",
 	        __func__, panel_param->param_name, panel_param->val_max,
 		panel_param->default_value, panel_param->value);
-
-	mutex_lock(&panel->panel_lock);
 
 	if (!panel->panel_initialized) {
 		rc = -ENODEV;
@@ -1251,9 +1249,23 @@ static int dsi_panel_send_param_cmd(struct dsi_panel *panel,
 	}
 
 end:
-	mutex_unlock(&panel->panel_lock);
 	return rc;
 };
+
+
+static int dsi_panel_send_param_cmd(struct dsi_panel *panel,
+                                struct msm_param_info *param_info)
+{
+	int rc;
+
+	mutex_lock(&panel->panel_lock);
+
+	rc = _dsi_panel_send_param_cmd(panel, param_info);
+
+	mutex_unlock(&panel->panel_lock);
+
+	return rc;
+}
 
 static int dsi_panel_set_local_hbm_param(struct dsi_panel *panel,
                         struct msm_param_info *param_info,
@@ -1275,8 +1287,6 @@ static int dsi_panel_set_local_hbm_param(struct dsi_panel *panel,
 	}
 
         param_map = panel_param->val_map;
-
-	mutex_lock(&panel->panel_lock);
 
 	if (param_info->value >= panel_param->val_max)
 		param_info->value = panel_param->val_max - 1;
@@ -1345,7 +1355,6 @@ static int dsi_panel_set_local_hbm_param(struct dsi_panel *panel,
 	}
 
 end:
-	mutex_unlock(&panel->panel_lock);
 	return rc;
 };
 
@@ -1412,8 +1421,6 @@ void update_hbm_cmd_bronco(struct dsi_panel *panel,
 	cmds = param_map_state->cmds->cmds;
 	count = param_map_state->cmds->count;
 
-	mutex_lock(&panel->panel_lock);
-
 	for ( i =0; i < count; i++,cmds++) {
 		payload = (u8 *)cmds->msg.tx_buf;
 		if (payload[0] == 0X62) {
@@ -1422,7 +1429,6 @@ void update_hbm_cmd_bronco(struct dsi_panel *panel,
 			pr_info("%s: payload[0] = 0x%x payload[1] = 0x%x", __func__, payload[0],payload[1]);
 		}
 	}
-	mutex_unlock(&panel->panel_lock);
 }
 
 static int dsi_panel_set_hbm(struct dsi_panel *panel,
@@ -1431,6 +1437,8 @@ static int dsi_panel_set_hbm(struct dsi_panel *panel,
 	int rc = 0;
 	u32 bl_lvl;
 	struct dsi_panel_lhbm_config *lhbm_config = &panel->lhbm_config;
+
+	mutex_lock(&panel->panel_lock);
 
 	pr_info("Set HBM to (%d)\n", param_info->value);
 	if(panel->delect_dc_onoff && param_info->value==0)
@@ -1451,17 +1459,17 @@ static int dsi_panel_set_hbm(struct dsi_panel *panel,
 		dsi_panel_lhbm_waitfor_fps_valid(panel);
 #endif
 
-	rc = dsi_panel_send_param_cmd(panel, param_info);
+	rc = _dsi_panel_send_param_cmd(panel, param_info);
 	if (rc < 0) {
 		DSI_ERR("%s: failed to send param cmds. ret=%d\n", __func__, rc);
 	} else {
 		bl_lvl = HBM_BRIGHTNESS(param_info->value);
-		mutex_lock(&panel->panel_lock);
 		rc = dsi_panel_set_backlight(panel, bl_lvl);
-		mutex_unlock(&panel->panel_lock);
 		if (rc)
 			DSI_ERR("unable to set backlight\n");
 	}
+
+	mutex_unlock(&panel->panel_lock);
 
 	return rc;
 };

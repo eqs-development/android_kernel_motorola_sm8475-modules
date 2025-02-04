@@ -4543,7 +4543,6 @@ static int dsi_panel_parse_param_prop(struct dsi_panel *panel,
 	enum dsi_cmd_set_type type;
 	const char *prop;
 	struct dsi_parser_utils *utils = &panel->utils;
-	const char *data;
 
 	for (i = 0; i < PARAM_ID_NUM; i++) {
 		param = &dsi_panel_param[panel_idx][i];
@@ -5893,8 +5892,6 @@ int dsi_panel_post_switch(struct dsi_panel *panel)
 int dsi_panel_enable(struct dsi_panel *panel)
 {
 	int rc = 0;
-	u8 pwr_mode;
-	static int panel_recovery_retry;
 
 	if (!panel) {
 		DSI_ERR("Invalid params\n");

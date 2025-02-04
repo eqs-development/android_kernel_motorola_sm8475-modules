@@ -4644,22 +4644,6 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
 	return rc;
 }
 
-static int dsi_panel_trigger_panel_dead_event(struct dsi_panel *panel)
-{
-	bool panel_dead;
-	struct drm_event event;
-	struct dsi_display *dsi_display = container_of(panel->host, struct dsi_display, host);
-	struct drm_connector *drm_conn = dsi_display->drm_conn;
-
-	panel_dead = true;
-	event.type = DRM_EVENT_PANEL_DEAD;
-	event.length = sizeof(u32);
-	msm_mode_object_event_notify(&drm_conn->base,
-			drm_conn->dev, &event, (u8 *)&panel_dead);
-
-	return 0;
-}
-
 struct dsi_panel *dsi_panel_get(struct device *parent,
 				struct device_node *of_node,
 				struct device_node *parser_node,

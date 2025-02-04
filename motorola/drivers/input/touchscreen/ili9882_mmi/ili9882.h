@@ -1255,7 +1255,6 @@ extern void ili_demo_debug_info_id0(u8 *buf, size_t len);
 
 #ifdef ILI_SET_TOUCH_STATE
 int touch_set_state(int state, int panel_idx);
-int check_touch_state(int *state, int panel_idx);
 #endif
 
 static inline void ipio_kfree(void **mem)

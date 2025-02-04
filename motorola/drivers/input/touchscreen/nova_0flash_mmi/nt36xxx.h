@@ -386,7 +386,6 @@ int nvt_set_charger(uint8_t charger_on_off);
 int32_t nvt_cmd_ext_store(uint8_t cmd, uint8_t subcmd);
 #ifdef NVT_SET_TOUCH_STATE
 int touch_set_state(int state, int panel_idx);
-int check_touch_state(int *state, int panel_idx);
 #endif
 #if NVT_TOUCH_ESD_PROTECT
 extern void nvt_esd_check_enable(uint8_t enable);

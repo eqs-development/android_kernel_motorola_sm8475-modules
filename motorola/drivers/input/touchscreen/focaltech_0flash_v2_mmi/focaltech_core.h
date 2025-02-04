@@ -377,7 +377,6 @@ void fts_esdcheck_resume(struct fts_ts_data *ts_data);
 
 #ifdef FTS_SET_TOUCH_STATE
 int touch_set_state(int state, int panel_idx);
-int check_touch_state(int *state, int panel_idx);
 #endif
 
 /* Host test */

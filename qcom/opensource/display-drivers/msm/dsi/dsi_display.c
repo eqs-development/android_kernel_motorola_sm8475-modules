@@ -6114,28 +6114,6 @@ static ssize_t panelName_show(struct device *device,
 	    return scnprintf(buf, PAGE_SIZE, "%s\n", "Not a DSI panel");
 }
 
-static ssize_t panelBLExponent_show(struct device *device,
-	struct device_attribute *attr, char *buf)
-{
-	struct drm_connector *conn;
-	struct sde_connector *sde_conn;
-	struct dsi_display *dsi_display;
-
-	if (!device || !buf) {
-		SDE_ERROR("invalid input param(s)\n");
-		return -EAGAIN;
-	}
-
-	conn = dev_get_drvdata(device);
-	sde_conn = to_sde_connector(conn);
-	dsi_display = sde_conn->display;
-
-	if (sde_conn->connector_type == DRM_MODE_CONNECTOR_DSI)
-	    return scnprintf(buf, PAGE_SIZE, "%d\n", dsi_display->panel->bl_config.bl_is_exponent);
-	else
-	    return scnprintf(buf, PAGE_SIZE, "%s\n", "Not a DSI panel");
-}
-
 static ssize_t panelDC_show(struct device *device,
 	struct device_attribute *attr, char *buf)
 {

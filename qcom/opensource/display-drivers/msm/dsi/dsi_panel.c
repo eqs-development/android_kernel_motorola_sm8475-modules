@@ -573,7 +573,6 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
 		gpio_set_value(panel->reset_config.vio_en_gpio, 0);
 
-exit:
 	return rc;
 }
 static int dsi_panel_tx_cmd_set(struct dsi_panel *panel,

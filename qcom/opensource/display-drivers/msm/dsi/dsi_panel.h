@@ -451,7 +451,6 @@ struct dsi_panel {
 	struct msm_param_info curDCModeParaInfo;
 	bool panel_send_cmd;
 	bool nt37705_dc_detect_fps;
-	bool rm690a0_backlight_config;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)
@@ -600,7 +599,5 @@ void mot_update_hbmoff(struct dsi_panel *panel,
                         struct msm_param_info *param_info);
 int dsi_panel_dfps_send_cmd(struct dsi_panel *panel);
 int dsi_panel_tx_cellid_cmd(struct dsi_panel *panel);
-int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
-				enum dsi_cmd_set_type type);
 #endif /* _DSI_PANEL_H_ */
 

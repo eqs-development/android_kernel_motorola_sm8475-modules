@@ -634,7 +634,7 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 exit:
 	return rc;
 }
-int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
+static int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
 				enum dsi_cmd_set_type type)
 {
 	int rc = 0, i = 0;
@@ -992,10 +992,7 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 		rc = backlight_device_set_brightness(bl->raw_bd, bl_lvl);
 		break;
 	case DSI_BACKLIGHT_DCS:
-		if(panel->rm690a0_backlight_config){
-			rc = mot_rm690a0_update_backlight(panel, bl_lvl);}
-		else
-			rc = dsi_panel_update_backlight(panel, bl_lvl);
+		rc = dsi_panel_update_backlight(panel, bl_lvl);
 		break;
 	case DSI_BACKLIGHT_EXTERNAL:
 		break;
@@ -2798,8 +2795,6 @@ const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-dfps-144-command",
 	"qcom,mdss-dsi-panel-cellid-command",
 	"qcom,mdss-dsi-timing-switch-command-base",
-	"qcom,mdss-dsi-normal-backlight-command",
-	"qcom,mdss-dsi-hbm-backlight-command",
 };
 
 const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
@@ -2849,8 +2844,6 @@ const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-dfps-144-command-state",
 	"qcom,mdss-dsi-panel-cellid-command-state",
 	"qcom,mdss-dsi-timing-switch-command-base-state",
-	"qcom,mdss-dsi-normal-backlight-command-state",
-	"qcom,mdss-dsi-hbm-backlight-command-state",
 };
 
 int dsi_panel_get_cmd_pkt_count(const char *data, u32 length, u32 *cnt)
@@ -4876,9 +4869,6 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
 
 	panel->nt37705_dc_detect_fps = of_property_read_bool(of_node,
 				"qcom,mdss-dsi-nt37705-dc-detect-fps");
-
-	panel->rm690a0_backlight_config = of_property_read_bool(of_node,
-				"qcom,mdss-dsi-rm690a0-backlight-config");
 
 	panel->mot_nt37701A_read_cellid = of_property_read_bool(of_node,
 				"qcom,mot_nt37701A_read_cellid");

@@ -431,7 +431,6 @@ struct dsi_panel {
 	char panel_supplier[DSI_PANEL_MAX_PANEL_LEN];
 
 	bool panel_hbm_fod;
-	bool panel_hbm_dim_off;
 
 	enum panel_hbm_type hbm_type;
 	u32  bl_lvl_during_hbm;
@@ -598,10 +597,6 @@ int dsi_panel_set_param(struct dsi_panel *panel,
 
 void dsi_panel_reset_param(struct dsi_panel *panel);
 
-int dsi_panel_get_elvss_data(struct dsi_panel *panel);
-int dsi_panel_get_elvss_data_1(struct dsi_panel *panel);
-int dsi_panel_set_elvss_dim_off(struct dsi_panel *panel, u8 val);
-int dsi_panel_parse_elvss_config(struct dsi_panel *panel, u8 elv_vl);
 void mot_update_hbmoff(struct dsi_panel *panel,
                         struct msm_param_info *param_info);
 int dsi_panel_dfps_send_cmd(struct dsi_panel *panel);

@@ -273,7 +273,6 @@ enum dsi_dyn_clk_feature_type {
  * @DSI_CMD_SET_HBM_OFF:                   Turning HBM off
  * @DSI_CMD_SET_ACL_ON:                    Turning ACL on
  * @DSI_CMD_SET_ACL_OFF:                   Turning ACL off
- * @DSI_CMD_SET_HBM_DIM_OFF:		       Turning HBM DIM off
  * @DSI_CMD_SET_CABC_UI:                   CABC UI mode
  * @DSI_CMD_SET_CABC_MV:                   CABC MV mode
  * @DSI_CMD_SET_CABC_DIS:                  CABC DIS mode

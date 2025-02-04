@@ -44,7 +44,6 @@
  */
 int dsi_display_ext_init(struct dsi_display *display);
 bool dsi_panel_mot_parse_timing_from_file(struct dsi_display *display, int index);
-int dsi_display_read_8s(struct dsi_display *display);
 int mot_atoi(const char *src);
 
 // BEGIN Motorola zhanggb, add refreshrate group, IKSWT-18219

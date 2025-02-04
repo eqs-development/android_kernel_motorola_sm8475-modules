@@ -100,6 +100,7 @@ struct dsi_dfps_capabilities {
 	u32 *dfps_list;
 	u32 dfps_list_len;
 	bool dfps_support;
+	bool dfps_send_cmd_support;
 };
 
 struct dsi_qsync_capabilities {
@@ -428,4 +429,7 @@ int dsi_panel_create_cmd_packets(const char *data, u32 length, u32 count,
 void dsi_panel_destroy_cmd_packets(struct dsi_panel_cmd_set *set);
 
 void dsi_panel_dealloc_cmd_packets(struct dsi_panel_cmd_set *set);
+
+int dsi_panel_dfps_send_cmd(struct dsi_panel *panel);
+
 #endif /* _DSI_PANEL_H_ */

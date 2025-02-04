@@ -1719,6 +1719,9 @@ static int dsi_panel_parse_dfps_caps(struct dsi_panel *panel)
 			dfps_caps->max_refresh_rate = dfps_caps->dfps_list[i];
 	}
 
+	dfps_caps->dfps_send_cmd_support = utils->read_bool(utils->data,
+			"qcom,mdss-dsi-pan-dfps-send-command");
+
 error:
 	return rc;
 }
@@ -1994,6 +1997,11 @@ const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-post-mode-switch-on-command",
 	"qcom,mdss-dsi-qsync-on-commands",
 	"qcom,mdss-dsi-qsync-off-commands",
+	"qcom,mdss-dsi-dfps-48-command",
+	"qcom,mdss-dsi-dfps-60-command",
+	"qcom,mdss-dsi-dfps-90-command",
+	"qcom,mdss-dsi-dfps-120-command",
+	"qcom,mdss-dsi-dfps-144-command",
 };
 
 const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
@@ -2022,6 +2030,11 @@ const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-post-mode-switch-on-command-state",
 	"qcom,mdss-dsi-qsync-on-commands-state",
 	"qcom,mdss-dsi-qsync-off-commands-state",
+	"qcom,mdss-dsi-dfps-48-command-state",
+	"qcom,mdss-dsi-dfps-60-command-state",
+	"qcom,mdss-dsi-dfps-90-command-state",
+	"qcom,mdss-dsi-dfps-120-command-state",
+	"qcom,mdss-dsi-dfps-144-command-state",
 };
 
 int dsi_panel_get_cmd_pkt_count(const char *data, u32 length, u32 *cnt)
@@ -5101,5 +5114,52 @@ int dsi_panel_post_unprepare(struct dsi_panel *panel)
 	}
 error:
 	mutex_unlock(&panel->panel_lock);
+	return rc;
+}
+
+int dsi_panel_dfps_send_cmd(struct dsi_panel *panel)
+{
+	enum dsi_cmd_set_type type = DSI_CMD_SET_MAX;
+	char cmd_set_prop[64];
+	u32 refresh_rate;
+	int rc;
+	u32 i;
+
+	if (!panel || !panel->cur_mode)
+		return -EINVAL;
+
+	if (!panel->dfps_caps.dfps_send_cmd_support)
+		return 0;
+
+	mutex_lock(&panel->panel_lock);
+	refresh_rate = panel->cur_mode->timing.refresh_rate;
+
+	snprintf(cmd_set_prop, sizeof(cmd_set_prop),
+		 "qcom,mdss-dsi-dfps-%d-command", refresh_rate);
+
+	for (i = DSI_CMD_SET_DFPS_CMD_48; i <= DSI_CMD_SET_DFPS_CMD_144; i++) {
+		if (!strcmp(cmd_set_prop, cmd_set_prop_map[i])) {
+			type = i;
+			break;
+		}
+	}
+
+	if (type == DSI_CMD_SET_MAX) {
+		DSI_ERR("[%s] failed to find cmd for %u\n",
+			panel->name, refresh_rate);
+		rc = -EINVAL;
+		goto exit;
+	}
+
+	rc = dsi_panel_tx_cmd_set(panel, type);
+	if (rc) {
+		DSI_ERR("[%s] failed to send %s cmds, rc=%d\n",
+		       panel->name, cmd_set_prop_map[type], rc);
+		goto exit;
+	}
+
+exit:
+	mutex_unlock(&panel->panel_lock);
+
 	return rc;
 }

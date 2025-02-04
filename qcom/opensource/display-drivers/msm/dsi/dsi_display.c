@@ -5218,6 +5218,14 @@ static int dsi_display_set_mode_sub(struct dsi_display *display,
 					DSI_ERR("Fail to add timing params\n");
 			}
 		}
+
+		rc = dsi_panel_dfps_send_cmd(display->panel);
+		if (rc) {
+			DSI_ERR("[%s] failed to send DFPS cmd, rc=%d\n",
+				display->name, rc);
+			goto error;
+		}
+
 		if (!(mode->dsi_mode_flags & DSI_MODE_FLAG_DYN_CLK))
 			return rc;
 	}
@@ -8642,6 +8650,13 @@ int dsi_display_enable(struct dsi_display *display)
 		if (rc) {
 			DSI_ERR("[%s] failed to enable DSI panel, rc=%d\n",
 			       display->name, rc);
+			goto error;
+		}
+
+		rc = dsi_panel_dfps_send_cmd(display->panel);
+		if (rc) {
+			DSI_ERR("[%s] failed to send DFPS cmd, rc=%d\n",
+				display->name, rc);
 			goto error;
 		}
 	}

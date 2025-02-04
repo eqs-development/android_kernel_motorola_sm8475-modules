@@ -958,11 +958,10 @@ static bool dsi_panel_set_hbm_backlight(struct dsi_panel *panel, u32 *bl_lvl)
 
 	bl_level = *bl_lvl;
 
-	if (bl_level == BRIGHTNESS_HBM_ON && panel->hbm_type == HBM_TYPE_OLED) {
+	if (bl_level == BRIGHTNESS_HBM_ON) {
 		return true;
-	} else if (bl_level == BRIGHTNESS_HBM_ON || bl_level == BRIGHTNESS_HBM_OFF) {
-		*bl_lvl = bl_level == BRIGHTNESS_HBM_ON ?
-			panel->bl_config.bl_max_level : panel->bl_lvl_during_hbm;
+	} else if (bl_level == BRIGHTNESS_HBM_OFF) {
+		*bl_lvl = panel->bl_lvl_during_hbm;
 		return false;
 	} else {
 		panel->bl_lvl_during_hbm = bl_level;
@@ -4746,35 +4745,12 @@ static int dsi_panel_parse_param_prop(struct dsi_panel *panel,
 	struct dsi_parser_utils *utils = &panel->utils;
 	const char *data;
 
-	panel->panel_hbm_fod = of_property_read_bool(of_node,
-				"qcom,mdss-dsi-hbm-fod");
-
 	for (i = 0; i < PARAM_ID_NUM; i++) {
 		param = &dsi_panel_param[panel_idx][i];
 
 		if (!param) {
 			pr_err("Invalid param\n");
 			goto err;
-		}
-
-		if (i == PARAM_HBM_ID){
-			panel->panel_hbm_fod = of_property_read_bool(of_node,
-				"qcom,mdss-dsi-hbm-fod");
-
-			data = of_get_property(of_node, "qcom,mdss-dsi-hbm-type", NULL);
-			if (data && !strcmp(data, "lcd-dcs-wled"))
-				panel->hbm_type = HBM_TYPE_LCD_DCS_WLED;
-			else if (data && !strcmp(data, "lcd-dcs-only"))
-				panel->hbm_type = HBM_TYPE_LCD_DCS_ONLY;
-			else if (data && !strcmp(data, "lcd-wled-only"))
-				panel->hbm_type = HBM_TYPE_LCD_WLED_ONLY;
-			else if (data && !strcmp(data, "lcd-dcs-gpio"))
-				panel->hbm_type = HBM_TYPE_LCD_DCS_GPIO;
-			else
-				panel->hbm_type = HBM_TYPE_OLED;
-
-			panel->bl_lvl_during_hbm = panel->bl_config.bl_max_level;
-
 		}
 
 		rc = -EINVAL;
@@ -4793,12 +4769,6 @@ static int dsi_panel_parse_param_prop(struct dsi_panel *panel,
 			prop =  cmd_set_prop_map[type];
 			if (!prop)
 				continue;
-
-			if ((type == DSI_CMD_SET_HBM_FOD_ON) &&
-						(!panel->panel_hbm_fod)) {
-				param->val_max -= 1;
-				continue;
-			}
 
 			rc = dsi_panel_parse_cmd_sets_sub(param_map->cmds,
 							type, utils);
@@ -4823,9 +4793,6 @@ static int dsi_panel_parse_param_prop(struct dsi_panel *panel,
 			}
 		}
 	}
-
-	panel->panel_hbm_fod = of_property_read_bool(of_node,
-				"qcom,mdss-dsi-hbm-fod");
 
 err:
 	return rc;

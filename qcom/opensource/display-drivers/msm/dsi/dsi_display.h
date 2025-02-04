@@ -725,13 +725,6 @@ int dsi_display_cmd_receive(void *display, const char *cmd_buf,
 			    u32 cmd_buf_len, u8 *recv_buf, u32 recv_buf_len);
 
 /**
- * dsi_display_force_esd_disable() - check if ESD UTAG is forced to disable ESD
- * @display:            Handle to display.
- */
-bool dsi_display_force_esd_disable(void *display);
-
-
-/**
  * dsi_display_soft_reset() - perform a soft reset on DSI controller
  * @display:         Handle to display
  *

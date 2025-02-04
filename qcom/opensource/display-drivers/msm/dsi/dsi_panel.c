@@ -2379,12 +2379,6 @@ int dsi_panel_parse_panel_cfg(struct dsi_panel *panel, bool is_primary)
 	u32 panel_ver, tmp;
 
 	np = of_find_node_by_path("/chosen");
-	/* Disable ESD only if the prop "mmi,esd" exists and is equal to 0 */
-	if (!of_property_read_u32(np, "mmi,esd", &tmp) && tmp == 0) {
-		panel->esd_utag_enable = false;
-		DSI_WARN("ESD detection is disabled by UTAGS\n");
-	} else
-		panel->esd_utag_enable = true;
 
 	panel->panel_ver = DSI_PANEL_PANEL_DEFAULT_VER;
 	panel->panel_id = DSI_PANEL_PANEL_DEFAULT_VER;
@@ -2405,8 +2399,6 @@ int dsi_panel_parse_panel_cfg(struct dsi_panel *panel, bool is_primary)
 				sizeof(panel->panel_name));
 	} else
 		strlcpy(panel->panel_name, pname, sizeof(panel->panel_name));
-
-	DSI_DEBUG("esd_utage_enable=%d\n", panel->esd_utag_enable);
 
 	panel_ver = (u32)panel->panel_ver;
 	panel->panel_regDA = (u32)panel->panel_ver & 0xff;

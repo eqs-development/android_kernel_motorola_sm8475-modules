@@ -293,13 +293,6 @@ struct sde_connector_ops {
 			   u32 cmd_buf_len, u8 *recv_buf, u32 recv_buf_len);
 
 	/**
-	 * force_esd_disable - force to disable check_status
-	 * @display: Pointer to private display handle
-	 * Returns: true for forcing ESD disable
-	 */
-	bool (*force_esd_disable)(void *display);
-
-	/**
 	 * set_param - set display's feature param setting
 	 * @display: Pointer to private display handle
 	 * Returns: Zero for success, negative for failure

@@ -423,7 +423,6 @@ struct dsi_panel {
 	enum dsi_panel_physical_type panel_type;
 
 	struct dsi_panel_ops panel_ops;
-	bool esd_utag_enable;
 	u64 panel_id;
 	u64 panel_ver;
 	u32 panel_regDA;

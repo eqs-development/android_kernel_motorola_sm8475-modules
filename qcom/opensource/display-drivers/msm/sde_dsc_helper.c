@@ -306,7 +306,8 @@ u8 _get_dsc_v1_2_bpg_offset(struct drm_dsc_config *dsc)
 		return (uncompressed_bpg_rate - (3 * bpp));
 }
 
-int sde_dsc_populate_dsc_config(struct drm_dsc_config *dsc, int scr_ver) {
+static int _sde_dsc_populate_dsc_config(struct drm_dsc_config *dsc, int scr_ver,
+					bool dsc_novatek_ic) {
 	int bpp, bpc;
 	int groups_per_line, groups_total;
 	int min_rate_buffer_size;
@@ -325,6 +326,8 @@ int sde_dsc_populate_dsc_config(struct drm_dsc_config *dsc, int scr_ver) {
 			(dsc->dsc_version_minor == 0x1)) {
 		if (scr_ver == 0x1)
 			dsc->first_line_bpg_offset = 15;
+		else if (dsc_novatek_ic)
+			dsc->first_line_bpg_offset = 13;
 		else
 			dsc->first_line_bpg_offset = 12;
 	} else if (dsc->dsc_version_minor == 0x2) {
@@ -355,6 +358,15 @@ int sde_dsc_populate_dsc_config(struct drm_dsc_config *dsc, int scr_ver) {
 			sde_dsc_rc_range_max_qp[ratio_idx][i];
 		dsc->rc_range_params[i].range_bpg_offset =
 			sde_dsc_rc_range_bpg[ratio_idx][i];
+
+		if (dsc_novatek_ic) {
+			dsc->rc_range_params[i].range_min_qp =
+				sde_dsc_rc_range_min_qp_nt[ratio_idx][i];
+			dsc->rc_range_params[i].range_max_qp =
+				sde_dsc_rc_range_max_qp_nt[ratio_idx][i];
+			dsc->rc_range_params[i].range_bpg_offset =
+				sde_dsc_rc_range_bpg_nt[ratio_idx][i];
+		}
 	}
 
 	rc_param_lut = &sde_dsc_rc_init_param_lut[ratio_idx];
@@ -438,137 +450,12 @@ int sde_dsc_populate_dsc_config(struct drm_dsc_config *dsc, int scr_ver) {
 	return 0;
 }
 
+int sde_dsc_populate_dsc_config(struct drm_dsc_config *dsc, int scr_ver) {
+	return _sde_dsc_populate_dsc_config(dsc, scr_ver, false);
+}
 
 int sde_dsc_populate_dsc_config_nt(struct drm_dsc_config *dsc, int scr_ver) {
-	int bpp, bpc;
-	int groups_per_line, groups_total;
-	int min_rate_buffer_size;
-	int hrd_delay;
-	int pre_num_extra_mux_bits, num_extra_mux_bits;
-	int slice_bits;
-	int data;
-	int final_value, final_scale;
-	struct sde_dsc_rc_init_params_lut *rc_param_lut;
-	u32 slice_width_mod;
-	int i, ratio_idx;
-
-	dsc->rc_model_size = 8192;
-
-	if ((dsc->dsc_version_major == 0x1) &&
-			(dsc->dsc_version_minor == 0x1)) {
-		if (scr_ver == 0x1)
-			dsc->first_line_bpg_offset = 15;
-		else
-			dsc->first_line_bpg_offset = 13;
-	} else if (dsc->dsc_version_minor == 0x2) {
-		dsc->first_line_bpg_offset = _get_dsc_v1_2_bpg_offset(dsc);
-	}
-
-	dsc->rc_edge_factor = 6;
-	dsc->rc_tgt_offset_high = 3;
-	dsc->rc_tgt_offset_low = 3;
-	dsc->simple_422 = 0;
-	dsc->convert_rgb = !(dsc->native_422 | dsc->native_420);
-	dsc->vbr_enable = 0;
-
-	bpp = DSC_BPP(*dsc);
-	bpc = dsc->bits_per_component;
-
-	ratio_idx = _get_rc_table_index(dsc, scr_ver);
-	if ((ratio_idx < 0) || (ratio_idx >= DSC_RATIO_TYPE_MAX))
-		return -EINVAL;
-
-	for (i = 0; i < DSC_NUM_BUF_RANGES - 1; i++)
-		dsc->rc_buf_thresh[i] = sde_dsc_rc_buf_thresh[i];
-
-	for (i = 0; i < DSC_NUM_BUF_RANGES; i++) {
-		dsc->rc_range_params[i].range_min_qp =
-			sde_dsc_rc_range_min_qp_nt[ratio_idx][i];
-		dsc->rc_range_params[i].range_max_qp =
-			sde_dsc_rc_range_max_qp_nt[ratio_idx][i];
-		dsc->rc_range_params[i].range_bpg_offset =
-			sde_dsc_rc_range_bpg_nt[ratio_idx][i];
-	}
-
-	rc_param_lut = &sde_dsc_rc_init_param_lut[ratio_idx];
-	dsc->rc_quant_incr_limit0 = rc_param_lut->rc_quant_incr_limit0;
-	dsc->rc_quant_incr_limit1 = rc_param_lut->rc_quant_incr_limit1;
-	dsc->initial_offset = rc_param_lut->initial_fullness_offset;
-	dsc->initial_xmit_delay = rc_param_lut->initial_xmit_delay;
-	dsc->second_line_bpg_offset = rc_param_lut->second_line_bpg_offset;
-	dsc->second_line_offset_adj = rc_param_lut->second_line_offset_adj;
-	dsc->flatness_min_qp = rc_param_lut->flatness_min_qp;
-	dsc->flatness_max_qp = rc_param_lut->flatness_max_qp;
-
-	slice_width_mod = dsc->slice_width;
-	if (dsc->native_422 || dsc->native_420) {
-		slice_width_mod = dsc->slice_width / 2;
-		bpp = bpp * 2;
-	}
-
-	dsc->line_buf_depth = bpc + 1;
-	dsc->mux_word_size = bpc > 10 ? DSC_MUX_WORD_SIZE_12_BPC: DSC_MUX_WORD_SIZE_8_10_BPC;
-
-	if ((dsc->dsc_version_minor == 0x2) && (dsc->native_420))
-		dsc->nsl_bpg_offset = (2048 * (DIV_ROUND_UP(dsc->second_line_bpg_offset,
-				(dsc->slice_height - 1))));
-
-	groups_per_line = DIV_ROUND_UP(slice_width_mod, 3);
-
-	dsc->slice_chunk_size = slice_width_mod * bpp / 8;
-	if ((slice_width_mod * bpp) % 8)
-		dsc->slice_chunk_size++;
-
-	/* rbs-min */
-	min_rate_buffer_size =  dsc->rc_model_size - dsc->initial_offset +
-			dsc->initial_xmit_delay * bpp +
-			groups_per_line * dsc->first_line_bpg_offset;
-
-	hrd_delay = DIV_ROUND_UP(min_rate_buffer_size, bpp);
-
-	dsc->initial_dec_delay = hrd_delay - dsc->initial_xmit_delay;
-
-	dsc->initial_scale_value = 8 * dsc->rc_model_size /
-			(dsc->rc_model_size - dsc->initial_offset);
-
-	slice_bits = 8 * dsc->slice_chunk_size * dsc->slice_height;
-
-	groups_total = groups_per_line * dsc->slice_height;
-
-	data = dsc->first_line_bpg_offset * 2048;
-
-	dsc->nfl_bpg_offset = DIV_ROUND_UP(data, (dsc->slice_height - 1));
-
-	if (dsc->native_422)
-		pre_num_extra_mux_bits = 4 * dsc->mux_word_size + (4 * bpc + 4) + (3 * 4 * bpc) - 2;
-	else if (dsc->native_420)
-		pre_num_extra_mux_bits = 3 * dsc->mux_word_size + (4 * bpc + 4) + (2 * 4 * bpc) - 2;
-	else
-		pre_num_extra_mux_bits = 3 * (dsc->mux_word_size + (4 * bpc + 4) - 2);
-
-	num_extra_mux_bits = pre_num_extra_mux_bits - (dsc->mux_word_size -
-		((slice_bits - pre_num_extra_mux_bits) % dsc->mux_word_size));
-
-	data = 2048 * (dsc->rc_model_size - dsc->initial_offset
-		+ num_extra_mux_bits);
-	dsc->slice_bpg_offset = DIV_ROUND_UP(data, groups_total);
-
-	data = dsc->initial_xmit_delay * bpp;
-	final_value =  dsc->rc_model_size - data + num_extra_mux_bits;
-
-	final_scale = 8 * dsc->rc_model_size /
-		(dsc->rc_model_size - final_value);
-
-	dsc->final_offset = final_value;
-
-	data = (final_scale - 9) * (dsc->nfl_bpg_offset +
-		dsc->slice_bpg_offset);
-	dsc->scale_increment_interval = (2048 * dsc->final_offset) / data;
-
-	dsc->scale_decrement_interval = groups_per_line /
-		(dsc->initial_scale_value - 8);
-
-	return 0;
+	return _sde_dsc_populate_dsc_config(dsc, scr_ver, true);
 }
 
 int sde_dsc_populate_dsc_private_params(struct msm_display_dsc_info *dsc_info,

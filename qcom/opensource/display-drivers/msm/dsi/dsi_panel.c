@@ -4853,30 +4853,6 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
 					struct device_node *of_node)
 {
 	int rc;
-	struct drm_panel_esd_config *esd_config = &panel->esd_config;
-
-	rc = of_property_read_u32(of_node,
-			"qcom,mdss-dsi-panel-on-check-value",
-			&panel->disp_on_chk_val);
-	if (rc) {
-		/*
-		 * No panel_on_chk_val is configured in dts, then check for ESD
-		 * setting */
-		if ((esd_config->status_cmd.count == 1) &&
-				(esd_config->status_value) &&
-				(esd_config->status_value[0] != 0)) {
-			panel->disp_on_chk_val = esd_config->status_value[0];
-			DSI_INFO("disp_on_chk_val is set with ESD's chk value\n");
-		 } else {
-			DSI_INFO("hardcode disp_on_chk_val\n");
-			panel->disp_on_chk_val = 0x9c;
-		}
-	} else
-		DSI_INFO("disp_on_chk_val = 0x%x is defined\n",
-					panel->disp_on_chk_val);
-
-	panel->no_panel_on_read_support = of_property_read_bool(of_node,
-				"qcom,mdss-dsi-no-panel-on-read-support");
 
 	panel->panel_hbm_dim_off = of_property_read_bool(of_node,
 				"qcom,mdss-dsi-hbm-dim-off");
@@ -4932,48 +4908,6 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
         }
 
 	return rc;
-}
-
-static int dsi_panel_get_pwr_mode(struct dsi_panel *panel, u8 *val)
-{
-	int rc = 0;
-	struct dsi_cmd_desc cmd;
-	struct dsi_display *display = NULL;
-	u32 flags;
-	u8 payload = MIPI_DCS_GET_POWER_MODE;
-	u32 rx_buf;
-
-	display = container_of(panel->host, struct dsi_display, host);
-	if (!display) {
-		DSI_ERR("failed to retrieve display handle\n", display);
-		rc = -EINVAL;
-		goto end;
-	}
-
-	memset(&cmd, 0x00, sizeof(struct dsi_cmd_desc));
-	flags = DSI_CTRL_CMD_READ;
-
-	cmd.msg.type = MIPI_DSI_DCS_READ;
-	cmd.last_command = 1;
-	cmd.msg.flags = MIPI_DSI_MSG_LASTCOMMAND;
-	cmd.msg.channel = 0;
-
-	cmd.msg.tx_len = 1;
-	cmd.msg.tx_buf = &payload;
-	cmd.msg.rx_len = 1;
-	cmd.msg.rx_buf = &rx_buf;
-
-	//rc = dsi_display_cmd_mipi_transfer(display, cmd, flags);
-	if (rc <= 0) {
-		DSI_ERR("Failed to call dsi_display_cmd_transfer. rc=%d\n", rc);
-		rc = -EIO;
-	} else
-		rc = 0;
-
-	*val = rx_buf & 0xFF;
-end:
-	return rc;
-
 }
 
 static int dsi_panel_trigger_panel_dead_event(struct dsi_panel *panel)
@@ -6430,32 +6364,6 @@ int dsi_panel_enable(struct dsi_panel *panel)
 			goto error;
 		}
 	}
-	if (!panel->no_panel_on_read_support) {
-		rc = dsi_panel_get_pwr_mode(panel, &pwr_mode);
-		if (rc) {
-			DSI_ERR("[%s] Failed to read pwr_mode, rc = %d",
-					panel->name, rc);
-			goto error;
-		}
-
-		if (pwr_mode != panel->disp_on_chk_val) {
-			DSI_ERR("%s: Read Pwr_mode=0%x is not matched with expected value =0x%x\n",
-				__func__, pwr_mode, panel->disp_on_chk_val);
-
-			if (panel_recovery_retry++ > 5) {
-				DSI_ERR("%s: panel recovery failed for all retries",
-					__func__);
-
-				BUG();
-			}
-
-			dsi_panel_trigger_panel_dead_event(panel);
-		} else {
-			DSI_INFO("-. Pwr_mode(0x0A) = 0x%x\n", pwr_mode);
-			panel_recovery_retry = 0;
-		}
-	} else
-		DSI_INFO("-: no_panel_on_read_support is set\n");
 
 	panel->panel_initialized = true;
 

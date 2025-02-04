@@ -430,9 +430,6 @@ struct dsi_panel {
 	char panel_name[DSI_PANEL_MAX_PANEL_LEN];
 	char panel_supplier[DSI_PANEL_MAX_PANEL_LEN];
 
-	u32 disp_on_chk_val;
-	bool no_panel_on_read_support;
-
 	bool panel_hbm_fod;
 	bool panel_hbm_dim_off;
 

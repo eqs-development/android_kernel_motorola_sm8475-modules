@@ -3725,40 +3725,6 @@ static int sde_kms_get_dsc_count(const struct msm_kms *kms,
 	return 0;
 }
 
-static int sde_kms_set_panel_feature(const struct msm_kms *kms,
-		struct panel_param_info param_info)
-{
-	struct sde_kms *sde_kms;
-	struct dsi_display *display;
-	struct msm_param_info param_info_msm;
-	int rc = 0;
-	int i = 0;
-
-	if (!kms) {
-		SDE_ERROR("invalid input args\n");
-		return -EINVAL;
-	}
-
-	sde_kms = to_sde_kms(kms);
-	param_info_msm.param_idx = (enum msm_param_id)param_info.param_idx;
-	param_info_msm.value = param_info.value;
-	for (i = 0; i < sde_kms->dsi_display_count; i++){
-		display = (struct dsi_display *)sde_kms->dsi_displays[i];
-		if(!display->panel->panel_send_cmd) {
-			continue;
-		}
-		rc = dsi_display_set_param(display, &param_info_msm);
-		if (rc){
-			SDE_ERROR("dsi_displays[%d] set param %d value %d failed\n",
-				i,param_info_msm.param_idx, param_info_msm.value);}
-		else{
-			SDE_INFO("dsi_displays[%d] set param %d value %d success\n",
-				i,param_info_msm.param_idx, param_info_msm.value);}
-	}
-
-	return rc;
-}
-
 static int _sde_kms_null_commit(struct drm_device *dev,
 		struct drm_encoder *enc)
 {
@@ -4285,7 +4251,6 @@ static const struct msm_kms_funcs kms_funcs = {
 	.trigger_null_flush = sde_kms_trigger_null_flush,
 	.get_mixer_count = sde_kms_get_mixer_count,
 	.get_dsc_count = sde_kms_get_dsc_count,
-	.set_panel_feature = sde_kms_set_panel_feature,
 };
 
 static int _sde_kms_mmu_destroy(struct sde_kms *sde_kms)

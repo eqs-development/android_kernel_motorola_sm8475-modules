@@ -493,50 +493,10 @@ int touch_set_state(int state, int panel_idx)
 }
 EXPORT_SYMBOL_GPL(touch_set_state);
 
-int check_touch_state(int *state, int panel_idx)
-{
-	int rc = 0;
-
-	if (panel_idx >= PANEL_IDX_MAX) rc = -EINVAL;
-	else *state = touch_state[panel_idx];
-
-	return rc;
-}
-
-static bool panel_power_is_alway_on(struct dsi_panel *panel)
-{
-	int touch_state = 0;
-	bool rc = 0;
-
-	struct dsi_display *dsi_display =
-		container_of(panel->host, struct dsi_display, host);
-
-	if (unlikely(dsi_display == NULL))
-		return rc;
-
-	if( check_touch_state(&touch_state, dsi_display->display_idx) == 0)
-	{
-		panel->tp_state = touch_state;
-		rc = touch_state ? 1: 0;
-	}
-
-	return rc;
-}
-
 static int dsi_panel_power_on(struct dsi_panel *panel)
 {
 	int rc = 0;
 
-	if ((panel->tp_state_check_enable) && (panel->tp_state)) {
-		if( (panel->tp_state_need_reset)) {
-			pr_info("%s: (%s)+power is alway on, but need reset \n", __func__, panel->name);
-			rc = dsi_panel_reset(panel);
-			if (rc)
-				DSI_ERR("[%s] failed to reset panel, rc=%d\n", panel->name, rc);
-		} else
-			pr_info("%s: (%s)+power is alway on \n", __func__, panel->name);
-		goto exit;
-	}
 	if (gpio_is_valid(panel->reset_config.vio_en_gpio))
 		gpio_set_value(panel->reset_config.vio_en_gpio, 1);
 
@@ -591,13 +551,6 @@ exit:
 static int dsi_panel_power_off(struct dsi_panel *panel)
 {
 	int rc = 0;
-
-	if (panel->tp_state_check_enable) {
-			if (panel_power_is_alway_on (panel)) {
-			pr_info("%s: (%s)+power is alway on \n", __func__, panel->name);
-			goto exit;
-		}
-	}
 
 	if (gpio_is_valid(panel->reset_config.disp_en_gpio))
 		gpio_set_value(panel->reset_config.disp_en_gpio, 0);
@@ -4724,12 +4677,6 @@ static int dsi_panel_parse_mot_panel_config(struct dsi_panel *panel,
 					struct device_node *of_node)
 {
 	int rc;
-
-	panel->tp_state_check_enable = of_property_read_bool(of_node,
-				"qcom,tp_state_check_enable");
-
-	panel->tp_state_need_reset = of_property_read_bool(of_node,
-				"qcom,tp_state_need_reset");
 
 	rc = of_property_read_u32(of_node,
 				"qcom,backlight_map_type",&panel->backlight_map_type);

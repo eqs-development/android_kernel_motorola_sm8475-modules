@@ -311,10 +311,6 @@ struct dsi_panel_ops {
 	int (*parse_power_cfg)(struct dsi_panel *panel);
 	int (*trigger_esd_attack)(struct dsi_panel *panel);
 };
-enum touch_state {
-	TOUCH_DEEP_SLEEP_STATE = 0,
-	TOUCH_LOW_POWER_STATE,
-};
 
 struct dsi_panel {
 	const char *name;
@@ -395,10 +391,6 @@ struct dsi_panel {
 	u32  bl_lvl_during_hbm;
 
 	struct panel_param *param_cmds;
-
-	enum touch_state tp_state;
-	bool tp_state_check_enable;
-	bool tp_state_need_reset;
 
 	int paramVersion;
 	int backlight_map_type;

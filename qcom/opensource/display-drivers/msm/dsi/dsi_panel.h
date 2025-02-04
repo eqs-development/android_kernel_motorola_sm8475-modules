@@ -200,7 +200,6 @@ struct dsi_panel_reset_config {
 	u32 mode_sel_state;
 	int vio_en_gpio;
 	int vci_en_gpio;
-	int touch_rst_gpio;
 };
 
 enum esd_check_status_mode {
@@ -366,7 +365,6 @@ struct dsi_panel {
 	bool ulps_suspend_enabled;
 	bool allow_phy_power_off;
 	bool reset_gpio_always_on;
-	bool need_execute_shutdown;
 	atomic_t esd_recovery_pending;
 
 	bool panel_initialized;

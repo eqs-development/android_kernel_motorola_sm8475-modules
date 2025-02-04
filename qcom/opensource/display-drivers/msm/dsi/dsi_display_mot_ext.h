@@ -28,7 +28,6 @@
 #include "dsi_phy.h"
 #include "dsi_panel.h"
 #include "sde_connector.h"
-#include "sde_motUtil.h"
 #include "dsi_display.h"
 #include <linux/alarmtimer.h>
 

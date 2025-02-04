@@ -696,7 +696,7 @@ static void dsi_display_parse_te_data(struct dsi_display *display)
 	display->te_source = val;
 }
 
-void dsi_display_set_cmd_tx_ctrl_flags(struct dsi_display *display,
+static void dsi_display_set_cmd_tx_ctrl_flags(struct dsi_display *display,
 		struct dsi_cmd_desc *cmd)
 {
 	struct dsi_display_ctrl *ctrl, *m_ctrl;
@@ -6266,79 +6266,6 @@ static ssize_t panelBLExponent_show(struct device *device,
 	    return scnprintf(buf, PAGE_SIZE, "%s\n", "Not a DSI panel");
 }
 
-static int dsi_display_read_cellid(struct dsi_display *display)
-{
-	struct dsi_display *dsi_display = display;
-	struct dsi_panel *panel;
-	ssize_t len;
-	int rc = 0;
-
-	if (!dsi_display || !dsi_display->panel)
-		return -EINVAL;
-
-	panel = dsi_display->panel;
-
-	pr_info("%s ++\n", __func__);
-
-	rc = dsi_panel_tx_cellid_cmd(panel);
-	if (rc) {
-		pr_err("%s dsi_panel_tx_cellid_cmd failed\n", __func__);
-	} else {
-		len = (panel->cellid_config.cellid_rlen > MAX_PANEL_CELLID) ?
-							 MAX_PANEL_CELLID : panel->cellid_config.cellid_rlen;
-		memcpy(dsi_display->cellid,  panel->cellid_config.return_buf, len);
-	}
-	return rc;
-}
-
-static ssize_t panelCellId_show(struct device *device,
-	struct device_attribute *attr, char *buf)
-{
-	struct drm_connector *conn;
-	struct sde_connector *sde_conn;
-	struct dsi_display *dsi_display;
-	struct dsi_panel *panel;
-
-	u8 *cellid;
-	int i, j;
-	ssize_t len=0, cellid_len = 0;
-
-	char char_num[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
-	char char_cha[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-		'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
-
-	if (!device || !buf) {
-		SDE_ERROR("invalid input param(s)\n");
-		return -EAGAIN;
-	}
-
-	conn = dev_get_drvdata(device);
-	sde_conn = to_sde_connector(conn);
-	dsi_display = sde_conn->display;
-	panel = dsi_display->panel;
-	if(panel->bl_config.bl_level <= 0)
-		return len;
-
-	dsi_display_read_cellid(dsi_display);
-
-	cellid_len = (panel->cellid_config.cellid_rlen > MAX_PANEL_CELLID) ?
-							 MAX_PANEL_CELLID : panel->cellid_config.cellid_rlen;
-	cellid = panel->cellid_config.return_buf;
-
-	for (i = panel->cellid_config.cellid_offset; i< cellid_len; i++) {
-		if (cellid[i]>=0x30 && cellid[i]<=0x39) {
-			j = cellid[i]-0x30;
-			len += snprintf(buf + len, PAGE_SIZE - len, "%c",char_num[j]);
-		} else if (cellid[i]>=0x41 && cellid[i]<=0x5A){
-			j = cellid[i]-0x41;
-			len += snprintf(buf + len, PAGE_SIZE - len, "%c",char_cha[j]);
-		}
-	}
-	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
-
-	return len;
-}
-
 static ssize_t panelDC_show(struct device *device,
 	struct device_attribute *attr, char *buf)
 {
@@ -6367,7 +6294,6 @@ static DEVICE_ATTR_RO(panelName);
 static DEVICE_ATTR_RO(panelRegDA);
 static DEVICE_ATTR_RO(panelSupplier);
 static DEVICE_ATTR_RO(panelBLExponent);
-static DEVICE_ATTR_RO(panelCellId);
 static DEVICE_ATTR_RO(panelDC);
 
 static const struct attribute *sde_conn_panel_attrs[] = {
@@ -6377,7 +6303,6 @@ static const struct attribute *sde_conn_panel_attrs[] = {
 	&dev_attr_panelRegDA.attr,
 	&dev_attr_panelSupplier.attr,
 	&dev_attr_panelBLExponent.attr,
-	&dev_attr_panelCellId.attr,
 	&dev_attr_panelDC.attr,
 	NULL
 };

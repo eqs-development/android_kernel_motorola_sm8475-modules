@@ -225,15 +225,6 @@ struct drm_panel_esd_config {
 	u32 groups;
 };
 
-struct drm_panel_cellid_config {
-	bool cellid_enabled;
-
-	struct dsi_panel_cmd_set cellid_cmd;
-	u32 cellid_rlen;
-	u32 cellid_offset;
-	u8 *return_buf;
-};
-
 struct dsi_panel_spr_info {
 	bool enable;
 	enum msm_display_spr_pack_type pack_type;
@@ -368,8 +359,6 @@ struct dsi_panel {
 
 	struct dsi_panel_lhbm_config lhbm_config;
 
-	struct drm_panel_cellid_config cellid_config;
-
 	struct dsi_parser_utils utils;
 
 	bool lp11_init;
@@ -418,7 +407,6 @@ struct dsi_panel {
 	bool delect_dc_onoff;
 	bool hbm_detect_fps;
 	bool dc_on;
-	bool mot_nt37701A_read_cellid;
 	bool esd_first_check;
 	int dc_state;
 	struct msm_param_info curDCModeParaInfo;
@@ -571,6 +559,5 @@ void dsi_panel_reset_param(struct dsi_panel *panel);
 void mot_update_hbmoff(struct dsi_panel *panel,
                         struct msm_param_info *param_info);
 int dsi_panel_dfps_send_cmd(struct dsi_panel *panel);
-int dsi_panel_tx_cellid_cmd(struct dsi_panel *panel);
 #endif /* _DSI_PANEL_H_ */
 

@@ -19,6 +19,12 @@
 #include "sde_dsc_helper.h"
 #include "sde_vdc_helper.h"
 
+#if defined(CONFIG_DRM_DYNAMIC_REFRESH_RATE)
+struct blocking_notifier_head dsi_freq_head =
+		BLOCKING_NOTIFIER_INIT(dsi_freq_head);
+EXPORT_SYMBOL_GPL(dsi_freq_head);
+#endif
+
 /**
  * topology is currently defined by a set of following 3 values:
  * 1. num of layer mixers
@@ -4814,6 +4820,13 @@ int dsi_panel_switch(struct dsi_panel *panel)
 		       panel->name, rc);
 
 	mutex_unlock(&panel->panel_lock);
+
+#if defined(CONFIG_DRM_DYNAMIC_REFRESH_RATE)
+	if (!rc)
+		blocking_notifier_call_chain(&dsi_freq_head,
+				panel->cur_mode->timing.refresh_rate, NULL);
+#endif
+
 	return rc;
 }
 

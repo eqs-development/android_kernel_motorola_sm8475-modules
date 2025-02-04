@@ -31,19 +31,6 @@
 #include "dsi_display.h"
 #include <linux/alarmtimer.h>
 
-#define LCD_PARA_LINE_LEN 2*1024
-#define LCD_PARA_TEM_BUF_LEN 64
-
-/**
- * dsi_display_ext_init() - Moto extend code init
- * @display:          Handle to display.
- *
- * Add sysfs node for Moto extend feature.
- *
- * Return: error code.
- */
-int dsi_display_ext_init(struct dsi_display *display);
-bool dsi_panel_mot_parse_timing_from_file(struct dsi_display *display, int index);
 int mot_atoi(const char *src);
 
 // BEGIN Motorola zhanggb, add refreshrate group, IKSWT-18219

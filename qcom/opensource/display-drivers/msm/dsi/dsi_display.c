@@ -6182,7 +6182,6 @@ int moto_panel_sysfs_add(struct dsi_display *display)
 	}
 
 	ret = sysfs_create_files(&display->drm_conn->kdev->kobj, sde_conn_panel_attrs);
-	dsi_display_ext_init(display);
 
 	DSI_INFO(" sysfs add done, ret\n", ret);
 	display->sysfs_add_done = true;

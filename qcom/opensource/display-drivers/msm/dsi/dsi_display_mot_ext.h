@@ -66,6 +66,4 @@ void mot_swtich_base(struct dsi_display *display, u32 refresh_rate);
 void update_dc_cmd_nt37705(struct dsi_panel *panel,
                         struct panel_param_val_map *param_map_state);
 
-int mot_rm690a0_update_backlight(struct dsi_panel *panel, u32 bl_lvl);
-
 #endif /* _DSI_DISPLAY_MOT_EXT_H_ */

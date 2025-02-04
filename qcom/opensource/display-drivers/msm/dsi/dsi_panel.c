@@ -2325,19 +2325,15 @@ int dsi_panel_parse_panel_cfg(struct dsi_panel *panel, bool is_primary)
 {
 	struct device_node *np;
 	const char *pname;
-	u32 panel_ver, tmp;
 
 	np = of_find_node_by_path("/chosen");
 
-	panel->panel_ver = DSI_PANEL_PANEL_DEFAULT_VER;
 	panel->panel_id = DSI_PANEL_PANEL_DEFAULT_VER;
 
 	if (is_primary) {
-		of_property_read_u64(np, "mmi,panel_ver", &panel->panel_ver);
 		of_property_read_u64(np, "mmi,panel_id", &panel->panel_id);
 		pname = of_get_property(np, "mmi,panel_name", NULL);
 	} else {
-		of_property_read_u64(np, "mmi,panel_ver_s", &panel->panel_ver);
 		of_property_read_u64(np, "mmi,panel_id_s", &panel->panel_id);
 		pname = of_get_property(np, "mmi,panel_name_s", NULL);
 	}
@@ -2349,15 +2345,9 @@ int dsi_panel_parse_panel_cfg(struct dsi_panel *panel, bool is_primary)
 	} else
 		strlcpy(panel->panel_name, pname, sizeof(panel->panel_name));
 
-	panel_ver = (u32)panel->panel_ver;
-	panel->panel_regDA = (u32)panel->panel_ver & 0xff;
-	DSI_INFO("BL: panel(%s) =%s, panel_id =0x%016llx  panel_ver=0x%016llx\n",
+	DSI_INFO("BL: panel(%s) =%s, panel_id =0x%016llx\n",
 			is_primary? "primary": "secondary",
-			panel->panel_name, panel->panel_id, panel->panel_ver);
-
-	DSI_INFO("BL: manufacture_id(0xDA) = 0x%x controller_ver(0xDB) = 0x%x controller_drv_ver(0XDC) = 0x%x\n",
-		panel_ver & 0xff, (panel_ver & 0xff00) >> 8,
-		(panel_ver & 0xff0000) >> 16);
+			panel->panel_name, panel->panel_id);
 
 	of_node_put(np);
 
@@ -4747,7 +4737,6 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 	struct dsi_parser_utils *utils;
 	const char *panel_physical_type;
 	int rc = 0;
-	const char *pname;
 
 	panel = kzalloc(sizeof(*panel), GFP_KERNEL);
 	if (!panel)
@@ -4766,15 +4755,6 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 				"qcom,mdss-dsi-panel-name", NULL);
 	if (!panel->name)
 		panel->name = DSI_PANEL_DEFAULT_LABEL;
-
-	pname = utils->get_property(utils->data,
-				"qcom,mdss-dsi-panel-supplier", NULL);
-	if (!pname || strlen(pname) == 0) {
-		DSI_WARN("Failed to get qcom,mdss-dsi-panel-supplier\n");
-		strlcpy(panel->panel_supplier, DSI_PANEL_UNKNOWN_PANEL_NAME,
-				sizeof(panel->panel_supplier));
-	} else
-		strlcpy(panel->panel_supplier, pname, sizeof(panel->panel_supplier));
 
 	/*
 	 * Set panel type to LCD as default.

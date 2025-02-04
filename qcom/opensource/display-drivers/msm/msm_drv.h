@@ -886,10 +886,7 @@ struct msm_display_info {
 	bool is_connected;
 
 	uint64_t panel_id;
-	uint64_t panel_ver;
-	uint32_t panel_regDA;
 	char panel_name[MSM_DISP_NAME_LEN_MAX];
-	char panel_supplier[MSM_DISP_NAME_LEN_MAX];
 
 	unsigned int width_mm;
 	unsigned int height_mm;

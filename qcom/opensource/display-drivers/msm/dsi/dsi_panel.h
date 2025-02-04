@@ -383,10 +383,7 @@ struct dsi_panel {
 
 	struct dsi_panel_ops panel_ops;
 	u64 panel_id;
-	u64 panel_ver;
-	u32 panel_regDA;
 	char panel_name[DSI_PANEL_MAX_PANEL_LEN];
-	char panel_supplier[DSI_PANEL_MAX_PANEL_LEN];
 
 	u32  bl_lvl_during_hbm;
 

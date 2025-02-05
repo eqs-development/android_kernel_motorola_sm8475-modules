@@ -3961,18 +3961,9 @@ static ssize_t sysfs_fod_hbm_read(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%u\n", status);
 }
 
-static ssize_t sysfs_fod_hbm_write(struct device *dev,
-				   struct device_attribute *attr,
-				   const char *buf, size_t count)
+int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status)
 {
-	struct dsi_display *display = dev_get_drvdata(dev);
-	struct dsi_panel *panel = display->panel;
-	bool status;
-	int rc;
-
-	rc = kstrtobool(buf, &status);
-	if (rc)
-		return rc;
+	int rc = 0;
 
 	mutex_lock(&panel->panel_lock);
 	if (panel->fod_hbm_enabled == status)
@@ -3986,6 +3977,24 @@ static ssize_t sysfs_fod_hbm_write(struct device *dev,
 
 exit:
 	mutex_unlock(&panel->panel_lock);
+
+	return rc;
+}
+
+static ssize_t sysfs_fod_hbm_write(struct device *dev,
+				   struct device_attribute *attr,
+				   const char *buf, size_t count)
+{
+	struct dsi_display *display = dev_get_drvdata(dev);
+	struct dsi_panel *panel = display->panel;
+	bool status;
+	int rc;
+
+	rc = kstrtobool(buf, &status);
+	if (rc)
+		return rc;
+
+	rc = dsi_panel_set_fod_hbm(panel, status);
 
 	return rc ?: count;
 }

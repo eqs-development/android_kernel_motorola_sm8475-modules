@@ -1722,6 +1722,28 @@ int msm_ioctl_display_hint_ops(struct drm_device *dev, void *data,
 	return 0;
 }
 
+int msm_ioctl_display_fod_hbm(struct drm_device *dev, void *data,
+			struct drm_file *file_priv)
+{
+	struct drm_msm_display_fod_hbm *display_fod_hbm = data;
+	struct msm_drm_private *priv;
+	struct msm_kms *kms;
+	int rc = 0;
+
+	priv = dev->dev_private;
+	kms = priv->kms;
+
+	if (unlikely(!display_fod_hbm)) {
+		DRM_ERROR("invalid ioctl data\n");
+		return -EINVAL;
+	}
+
+	if (kms && kms->funcs && kms->funcs->set_fod_hbm)
+		rc = kms->funcs->set_fod_hbm(kms, display_fod_hbm->status);
+
+	return rc;
+}
+
 static const struct drm_ioctl_desc msm_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(MSM_GEM_NEW,      msm_ioctl_gem_new,      DRM_AUTH|DRM_RENDER_ALLOW),
 	DRM_IOCTL_DEF_DRV(MSM_GEM_CPU_PREP, msm_ioctl_gem_cpu_prep, DRM_AUTH|DRM_RENDER_ALLOW),
@@ -1736,6 +1758,8 @@ static const struct drm_ioctl_desc msm_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(MSM_POWER_CTRL, msm_ioctl_power_ctrl,
 			DRM_RENDER_ALLOW),
 	DRM_IOCTL_DEF_DRV(MSM_DISPLAY_HINT, msm_ioctl_display_hint_ops,
+			DRM_UNLOCKED),
+	DRM_IOCTL_DEF_DRV(MSM_DISPLAY_FOD_HBM, msm_ioctl_display_fod_hbm,
 			DRM_UNLOCKED),
 };
 

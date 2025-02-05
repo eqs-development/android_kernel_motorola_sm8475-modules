@@ -796,6 +796,10 @@ struct drm_msm_display_hint {
 	__u32 hint_flags;
 };
 
+struct drm_msm_display_fod_hbm {
+	__u8 status;
+};
+
 #define DRM_NOISE_LAYER_CFG
 #define DRM_NOISE_TEMPORAL_FLAG (1 << 0)
 #define DRM_NOISE_ATTN_MAX 255
@@ -825,6 +829,7 @@ struct drm_msm_noise_layer_cfg {
 #define DRM_MSM_RMFB2                  0x43
 #define DRM_MSM_POWER_CTRL             0x44
 #define DRM_MSM_DISPLAY_HINT           0x45
+#define DRM_MSM_DISPLAY_FOD_HBM        0x46
 
 /* sde custom events */
 #define DRM_EVENT_HISTOGRAM 0x80000000
@@ -870,6 +875,8 @@ struct drm_msm_noise_layer_cfg {
 			DRM_MSM_POWER_CTRL), struct drm_msm_power_ctrl)
 #define DRM_IOCTL_MSM_DISPLAY_HINT DRM_IOW((DRM_COMMAND_BASE + \
 			DRM_MSM_DISPLAY_HINT), struct drm_msm_display_hint)
+#define DRM_IOCTL_MSM_DISPLAY_FOD_HBM DRM_IOW((DRM_COMMAND_BASE + \
+			DRM_MSM_DISPLAY_FOD_HBM), struct drm_msm_display_fod_hbm)
 
 #if defined(__cplusplus)
 }

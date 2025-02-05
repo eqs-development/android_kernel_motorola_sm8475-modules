@@ -3722,6 +3722,31 @@ static int sde_kms_get_dsc_count(const struct msm_kms *kms,
 	return 0;
 }
 
+static int sde_kms_set_fod_hbm(const struct msm_kms *kms, bool enabled)
+{
+	struct dsi_display *display;
+	struct sde_kms *sde_kms;
+	int rc = 0;
+	int i;
+
+	if (!kms) {
+		SDE_ERROR("invalid input args\n");
+		return -EINVAL;
+	}
+
+	sde_kms = to_sde_kms(kms);
+	for (i = 0; i < sde_kms->dsi_display_count; i++){
+		display = (struct dsi_display *)sde_kms->dsi_displays[i];
+
+		rc = dsi_panel_set_fod_hbm(display->panel, enabled);
+		if (rc)
+			goto exit;
+	}
+
+exit:
+	return rc;
+}
+
 static int _sde_kms_null_commit(struct drm_device *dev,
 		struct drm_encoder *enc)
 {
@@ -4248,6 +4273,7 @@ static const struct msm_kms_funcs kms_funcs = {
 	.trigger_null_flush = sde_kms_trigger_null_flush,
 	.get_mixer_count = sde_kms_get_mixer_count,
 	.get_dsc_count = sde_kms_get_dsc_count,
+	.set_fod_hbm = sde_kms_set_fod_hbm,
 };
 
 static int _sde_kms_mmu_destroy(struct sde_kms *sde_kms)

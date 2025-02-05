@@ -144,6 +144,7 @@ struct msm_kms_funcs {
 	/* topology dsc information */
 	int (*get_dsc_count)(const struct msm_kms *kms,
 			u32 hdisplay, u32 *num_dsc);
+	int (*set_fod_hbm)(const struct msm_kms *kms, bool enabled);
 };
 
 struct msm_kms {

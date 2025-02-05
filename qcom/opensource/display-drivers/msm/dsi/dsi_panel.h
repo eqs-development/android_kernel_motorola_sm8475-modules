@@ -444,4 +444,6 @@ void dsi_panel_dealloc_cmd_packets(struct dsi_panel_cmd_set *set);
 
 int dsi_panel_dfps_send_cmd(struct dsi_panel *panel);
 
+int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status);
+
 #endif /* _DSI_PANEL_H_ */

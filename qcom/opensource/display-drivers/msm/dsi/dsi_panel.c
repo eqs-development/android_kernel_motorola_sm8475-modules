@@ -625,6 +625,9 @@ static int dsi_panel_update_backlight(struct dsi_panel *panel,
 		return -EINVAL;
 	}
 
+	if (bl_lvl < panel->bl_remap_config.size)
+		bl_lvl = panel->bl_remap_config.data[bl_lvl];
+
 	dsi = &panel->mipi_device;
 	if (unlikely(panel->bl_config.lp_mode)) {
 		mode_flags = dsi->mode_flags;
@@ -3752,6 +3755,36 @@ static int dsi_panel_parse_local_hbm_config(struct dsi_panel *panel)
 	return 0;
 }
 
+static int dsi_panel_parse_bl_remap_confid(struct dsi_panel *panel)
+{
+	struct dsi_panel_bl_remap_config *bl_remap = &panel->bl_remap_config;
+	const char *prop_name = "qcom,dsi-bl-remap-table";
+	struct dsi_parser_utils *utils = &panel->utils;
+	int rc;
+
+	rc = utils->count_u32_elems(utils->data, prop_name);
+	if (rc <= 0) {
+		DSI_ERR("Unable to read bl remap table size, rc=%d\n", rc);
+		return rc;
+	}
+
+	bl_remap->size = rc;
+
+	bl_remap->data = kcalloc(bl_remap->size, sizeof(*bl_remap->data),
+				 GFP_KERNEL);
+	if (!bl_remap->data)
+		return -ENOMEM;
+
+	rc = utils->read_u32_array(utils->data, prop_name,
+				   bl_remap->data, bl_remap->size);
+	if (rc) {
+		DSI_ERR("Unable to read bl remap table, rc=%d\n", rc);
+		return rc;
+	}
+
+	return 0;
+}
+
 static void dsi_panel_update_util(struct dsi_panel *panel,
 				  struct device_node *parser_node)
 {
@@ -3843,6 +3876,9 @@ static int dsi_panel_set_hbm_status(struct dsi_panel *panel,
 	priv_info = panel->cur_mode->priv_info;
 	bl_level = panel->bl_config.real_bl_level;
 	alpha_val = 0;
+
+	if (bl_level < panel->bl_remap_config.size)
+		bl_level = panel->bl_remap_config.data[bl_level];
 
 	if (hbm_status) {
 		type = DSI_CMD_SET_HBM_ON;
@@ -4199,6 +4235,10 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 	rc = dsi_panel_parse_local_hbm_config(panel);
 	if (rc)
 		DSI_DEBUG("failed to parse local hbm config, rc=%d\n", rc);
+
+	rc = dsi_panel_parse_bl_remap_confid(panel);
+	if (rc)
+		DSI_DEBUG("failed to parse bl remap config, rc=%d\n", rc);
 
 	rc = dsi_panel_vreg_get(panel);
 	if (rc) {

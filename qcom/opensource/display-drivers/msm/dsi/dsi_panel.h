@@ -220,6 +220,11 @@ struct dsi_panel_lhbm_config {
 	u32 *alpha;
 };
 
+struct dsi_panel_bl_remap_config {
+	u32 size;
+	u32 *data;
+};
+
 struct dsi_panel;
 
 struct dsi_panel_ops {
@@ -305,6 +310,8 @@ struct dsi_panel {
 	bool hbm_enabled;
 	bool fod_hbm_enabled;
 	bool dc_dimming_enabled;
+
+	struct dsi_panel_bl_remap_config bl_remap_config;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)
